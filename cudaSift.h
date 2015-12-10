@@ -19,6 +19,7 @@ typedef struct {
   float subsampling;
   float empty[3];
   float data[128];
+  int valid;
 } SiftPoint;
 
 typedef struct {

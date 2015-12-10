@@ -123,14 +123,15 @@ cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, c
 
   int w = limg.size().width + rimg.size().width;
   for (int j = 0; j < numPts; j++) {
-    float dx = sift1[j].match_xpos + limg.size().width - sift1[j].xpos;
-    float dy = sift1[j].match_ypos - sift1[j].ypos;
-    int len = (int)(fabs(dx) > fabs(dy) ? fabs(dx) : fabs(dy));
-    for (int l = 0; l < len; l++) {
-      int x = (int)(sift1[j].xpos + dx * l / len);
-      int y = (int)(sift1[j].ypos + dy * l / len);
-      im3.at<float>(y, x) = 255.0f;
-
+    if (sift1[j].valid == 1) {
+      float dx = sift1[j].match_xpos + limg.size().width - sift1[j].xpos;
+      float dy = sift1[j].match_ypos - sift1[j].ypos;
+      int len = (int)(fabs(dx) > fabs(dy) ? fabs(dx) : fabs(dy));
+      for (int l = 0; l < len; l++) {
+        int x = (int)(sift1[j].xpos + dx * l / len);
+        int y = (int)(sift1[j].ypos + dy * l / len);
+        im3.at<float>(y, x) = 255.0f;
+      }
     }
   }
   //std::cout << std::setprecision(6);
@@ -145,13 +146,15 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   SiftPoint *sift1 = siftData1.h_data;
   for (int i = 0; i < siftData1.numPts; i++)
   {
-    int ind  = ((int)sift1[i].xpos + (int)sift1[i].ypos * imgw);
-    int ind2 = ((int)sift1[i].match_xpos + (int)sift1[i].match_ypos * imgw);
+    if (sift1[i].valid) {
+      int ind  = ((int)sift1[i].xpos + (int)sift1[i].ypos * imgw);
+      int ind2 = ((int)sift1[i].match_xpos + (int)sift1[i].match_ypos * imgw);
 
-    fout << sift1[i].xpos << "\t" << sift1[i].ypos << "\t";
-    fout << sift1[i].match_xpos << "\t" << sift1[i].match_ypos << "\t";
-    fout << ind << "\t" << ind2 << "\t";
-    fout << endl;
+      fout << sift1[i].xpos << "\t" << sift1[i].ypos << "\t";
+      fout << sift1[i].match_xpos << "\t" << sift1[i].match_ypos << "\t";
+      fout << ind << "\t" << ind2 << "\t";
+      fout << endl;
+    }
   }
 
   fout.close();
