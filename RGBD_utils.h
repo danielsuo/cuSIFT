@@ -37,4 +37,6 @@ void uint2uchar(unsigned int in, unsigned char* out);
 cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, cv::Mat rimg);
 void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw);
 
+void ReadVLFeatSiftData(SiftData &siftData, const char *filename);
+
 #endif

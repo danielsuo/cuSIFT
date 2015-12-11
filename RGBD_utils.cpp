@@ -158,5 +158,49 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   }
 
   fout.close();
+}
 
+/* Assumes output was created by vl_sift_tofile.m
+ * Binary format
+ * - uint32_t numPts: number of sift points that will follow
+ * - float points: 4 x numPts that contains x, y, scale, and orientation 
+ *   (in radians)
+ * - float descriptors: 128 x numPts that contain descriptors (0.0 to 1.0)
+*/
+void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
+  fprintf(stderr, "Reading vlfeat data from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+
+  // First, read number of SIFT points in the VLFeat SIFT data file
+  uint32_t numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+
+  // Next, grab matrix containing x, y, scale, orientation (in radians)
+  float *points = new float[4 * numPts];
+  fread((void *)points, sizeof(float), 4 * numPts, fp);
+
+  // Finally, get SIFT descriptor arrays
+  float *descriptors = new float[128 * numPts];
+  fread((void *)descriptors, sizeof(float), 128 * numPts, fp);
+
+  // Finish reading
+  fclose(fp);
+
+  SiftPoint *h_data = (SiftPoint *)calloc(numPts, sizeof(SiftPoint));
+
+  for (int i = 0; i < numPts; i++) {
+    h_data[i].xpos = points[i * 4];
+    h_data[i].ypos = points[i * 4 + 1];
+    h_data[i].scale = points[i * 4 + 2];
+    h_data[i].orientation = points[i * 4 + 3];
+
+    memcpy(h_data[i].data, descriptors + i * 128, sizeof(float) * 128);
+  }
+
+  AddSiftData(siftData, h_data, numPts);
+
+  free(points);
+  free(descriptors);
+  free(h_data);
 }

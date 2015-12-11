@@ -32,7 +32,7 @@ void InitCuda(int devNum)
   printf("  Memory Clock Rate (MHz): %d\n", prop.memoryClockRate/1000);
   printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
   printf("  Peak Memory Bandwidth (GB/s): %.1f\n\n",
-	 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
+    2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
 }
 
 void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling) 
@@ -185,6 +185,79 @@ void InitSiftData(SiftData &data, int num, bool host, bool dev)
 #endif
 }
 
+// Modifying the original AddSiftData to add data from CPU memory, rather than
+// from GPU memory. Also, ignore subsampling for now.
+//
+// Original function:
+// void AddSiftData(SiftData &data, float *d_sift, float *d_desc, int numPts, int maxPts, float subsampling)
+void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts) {
+  // Compute new total number of points once we add new points
+  int newNum = data.numPts + numPts;
+
+  // If we haven't allocated enough memory for all of the points, double the
+  // memory
+  if (data.maxPts < newNum) {
+
+    // Get new amount of memory to allocate
+    int newMaxNum = 2 * data.maxPts;
+    while (newNum > newMaxNum)
+      newMaxNum *= 2;
+
+    // If we have host data, allocate new memory, copy over, and free old memory
+    if (data.h_data != NULL) {
+      SiftPoint *h_data = (SiftPoint *)malloc(sizeof(SiftPoint) * newMaxNum);
+      memcpy(h_data, data.h_data, sizeof(SiftPoint) * data.numPts);
+      free(data.h_data);
+      data.h_data = h_data;
+    }
+
+    // If we have device data, allocate new memory, copy over, and free old memory
+    if (data.d_data != NULL) {
+      SiftPoint *d_data = NULL;
+      safeCall(cudaMalloc((void**)&d_data, sizeof(SiftPoint) * newMaxNum));
+      safeCall(cudaMemcpy(d_data, data.d_data, sizeof(SiftPoint) * data.numPts, cudaMemcpyDeviceToDevice));
+      safeCall(cudaFree(data.d_data));
+      data.d_data = d_data;
+    }
+    data.maxPts = newMaxNum;
+  }
+
+  if (data.h_data != NULL) {
+    memcpy(data.h_data + data.numPts, h_data, sizeof(SiftPoint) * numPts);
+  }
+
+  if (data.d_data != NULL) {
+    safeCall(cudaMemcpy(data.d_data + data.numPts, h_data, sizeof(SiftPoint) * numPts, cudaMemcpyHostToDevice));
+  }
+
+  data.numPts = newNum;
+
+  // Subsample the first three rows of data (xpos, ypos, and scale) if needed
+  /*
+  int bwidth = sizeof(float) * numPts; 
+  float *buffer = (float *)malloc(3 * bwidth);
+
+  safeCall(cudaMemcpy2D(buffer, bwidth, h_sift, sizeof(float)*maxPts, bwidth, 3, cudaMemcpyDeviceToHost));
+  for (int i=0;i<3*numPts;i++) 
+    buffer[i] *= subsampling;
+  safeCall(cudaMemcpy2D(h_sift, sizeof(float)*maxPts, buffer, bwidth, bwidth, 3, cudaMemcpyHostToDevice));
+  safeCall(cudaThreadSynchronize());
+  */
+
+  // if (data.h_data != NULL) {
+  //   float *ptr = (float*)&data.h_data[data.numPts];
+  //   for (int i=0; i<6; i++)
+  //     safeCall(cudaMemcpy2D(&ptr[i], pitch, &h_sift[i*maxPts], 4, 4, numPts, cudaMemcpyDeviceToHost));
+  //   safeCall(cudaMemcpy2D(&ptr[16], pitch, h_desc, sizeof(float)*128, sizeof(float)*128, numPts, cudaMemcpyDeviceToHost));
+  // }
+  // if (data.d_data!=NULL) {
+  //   float *ptr = (float*)&data.d_data[data.numPts];
+  //   for (int i=0;i<6;i++)
+  //     safeCall(cudaMemcpy2D(&ptr[i], pitch, &h_sift[i*maxPts], 4, 4, numPts, cudaMemcpyDeviceToDevice));
+  //   safeCall(cudaMemcpy2D(&ptr[16], pitch, h_desc, sizeof(float)*128, sizeof(float)*128, numPts, cudaMemcpyDeviceToDevice));
+  // }
+}
+
 void FreeSiftData(SiftData &data)
 {
 #ifdef MANAGEDMEM
@@ -222,22 +295,22 @@ void PrintSiftData(SiftData &data)
     printf("orientation  = %.2f\n", h_data[i].orientation);
     printf("score        = %.2f\n", h_data[i].score);
     float *siftData = (float*)&h_data[i].data;
-    for (int j=0;j<8;j++) {
-      if (j==0) 
-	printf("data = ");
-      else 
-	printf("       ");
-      for (int k=0;k<16;k++)
-	if (siftData[j+8*k]<0.05)
-	  printf(" .   ");
-	else
-	  printf("%.2f ", siftData[j+8*k]);
-      printf("\n");
-    }
-  }
-  printf("Number of available points: %d\n", data.numPts);
-  printf("Number of allocated points: %d\n", data.maxPts);
-}
+    for (int j = 0; j < 8; j++) {
+      if (j == 0) 
+       printf("data = ");
+     else 
+       printf("       ");
+     for (int k = 0; k<16; k++)
+       if (siftData[j * 16 + k] < 0.01)
+         printf(" .   ");
+       else
+         printf("%.2f ", siftData[j * 16 + k]);
+       printf("\n");
+     }
+   }
+   printf("Number of available points: %d\n", data.numPts);
+   printf("Number of allocated points: %d\n", data.maxPts);
+ }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Host side master functions

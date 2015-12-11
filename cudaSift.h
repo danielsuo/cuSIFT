@@ -36,6 +36,7 @@ typedef struct {
 void InitCuda(int devNum = 0);
 void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale = 0.0f, float subsampling = 1.0f);
 void InitSiftData(SiftData &data, int num = 1024, bool host = false, bool dev = true);
+void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts);
 void FreeSiftData(SiftData &data);
 void PrintSiftData(SiftData &data);
 double MatchSiftData(SiftData &data1, SiftData &data2);
