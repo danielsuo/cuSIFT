@@ -204,3 +204,58 @@ void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
   free(descriptors);
   free(h_data);
 }
+
+void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *filename) {
+  fprintf(stderr, "Reading MATLAB match data from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+
+  // First, read number of matched points
+  uint32_t numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+
+  // Next, grab matrix containing world coordinates from current frame and
+  // world coordinates from next frame (x1, y1, z1, x2, y2, z2)
+  float *matchedPoints = new float[6 * numPts];
+  fread((void *)matchedPoints, sizeof(float), 6 * numPts, fp);
+
+  // Resize the match matrices
+  curr_match.resize(numPts);
+  next_match.resize(numPts);
+
+  fprintf(stderr, "Number of matches %d\n", curr_match.rows);
+  // Store match data in curr_match and next_match, which are 3xnumPts matrices
+  for (int i = 0; i < numPts; i++) {
+    curr_match.at<float>(i, 0) = matchedPoints[i * 6 + 0];
+    curr_match.at<float>(i, 1) = matchedPoints[i * 6 + 1];
+    curr_match.at<float>(i, 2) = matchedPoints[i * 6 + 2];
+    next_match.at<float>(i, 0) = matchedPoints[i * 6 + 3];
+    next_match.at<float>(i, 1) = matchedPoints[i * 6 + 4];
+    next_match.at<float>(i, 2) = matchedPoints[i * 6 + 5];
+
+    fprintf(stderr, "Matches %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f\n",
+      curr_match.at<float>(i, 0),
+      curr_match.at<float>(i, 1),
+      curr_match.at<float>(i, 2),
+      next_match.at<float>(i, 0),
+      next_match.at<float>(i, 1),
+      next_match.at<float>(i, 2)
+      );
+  }
+
+  free(matchedPoints);
+}
+
+void ReadMATLABRt(float *Rt_relative, const char *filename) {
+  fprintf(stderr, "Reading MATLAB Rt data from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+  fread((void *)Rt_relative, sizeof(float), 12, fp);
+  fclose(fp);
+
+  fprintf(stderr, "MATLAB Rt: ");
+  for (int i = 0; i < 12; i++) {
+    fprintf(stderr, "%0.4f ", Rt_relative[i]);
+  }
+  fprintf(stderr, "\n");
+}

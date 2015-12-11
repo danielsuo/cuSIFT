@@ -318,8 +318,12 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_Sif
   int ptr = size*scale + max(min(xpos-1, width-1), 0);
 
   if (tx==0)
-    cnt = 0; 
-  for (int y=0;y<MINMAX_H;y++) {
+    cnt = 0;
+
+  __syncthreads();
+
+  int yloops = min(height - MINMAX_H * blockIdx.y, MINMAX_H);
+  for (int y=0;y<yloops;y++) {
 
     int ypos = MINMAX_H*blockIdx.y + y;
     int yptr0 = ptr + max(0,ypos-1)*pitch;
