@@ -13,6 +13,9 @@
 #include "cudaImage.h"
 #include "cudaSift.h"
 
+#include "extras/matching.h"
+#include "extras/homography.h"
+
 int ImproveHomography(SiftData &data, float *homography, int numLoops, float minScore, float maxAmbiguity, float thresh);
 void PrintMatchData(SiftData &siftData1, SiftData &siftData2, CudaImage &img);
 void MatchAll(SiftData &siftData1, SiftData &siftData2, float *homography);

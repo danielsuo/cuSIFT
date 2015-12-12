@@ -1,4 +1,3 @@
-#include "cudautils.h"
 #include "rigidTransform.h"
 
 #define max(x,y) ((x)>(y)?(x):(y))

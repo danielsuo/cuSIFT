@@ -24,6 +24,45 @@ void writeMatToFile(cv::Mat& m, const char* filename)
   fout.close();
 }
 
+void PrintSiftData(SiftData &data)
+{
+#ifdef MANAGEDMEM
+  SiftPoint *h_data = data.m_data;
+#else
+  SiftPoint *h_data = data.h_data;
+  if (data.h_data==NULL) {
+    h_data = (SiftPoint *)malloc(sizeof(SiftPoint)*data.maxPts);
+    safeCall(cudaMallocHost((void **)&h_data, sizeof(SiftPoint)*data.maxPts));
+    safeCall(cudaMemcpy(h_data, data.d_data, sizeof(SiftPoint)*data.numPts, cudaMemcpyDeviceToHost));
+    data.h_data = h_data;
+  }
+#endif
+  for (int i=0;i<data.numPts;i++) {
+    printf("xpos         = %.2f\n", h_data[i].xpos);
+    printf("ypos         = %.2f\n", h_data[i].ypos);
+    printf("scale        = %.2f\n", h_data[i].scale);
+    printf("sharpness    = %.2f\n", h_data[i].sharpness);
+    printf("edgeness     = %.2f\n", h_data[i].edgeness);
+    printf("orientation  = %.2f\n", h_data[i].orientation);
+    printf("score        = %.2f\n", h_data[i].score);
+    float *siftData = (float*)&h_data[i].data;
+    for (int j = 0; j < 8; j++) {
+      if (j == 0) 
+       printf("data = ");
+     else 
+       printf("       ");
+     for (int k = 0; k<16; k++)
+       if (siftData[j * 16 + k] < 0.01)
+         printf(" .   ");
+       else
+         printf("%.2f ", siftData[j * 16 + k]);
+       printf("\n");
+     }
+   }
+   printf("Number of available points: %d\n", data.numPts);
+   printf("Number of allocated points: %d\n", data.maxPts);
+ }
+
 cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, cv::Mat rimg)
 {
   int numPts = siftData1.numPts;
@@ -172,4 +211,52 @@ void ReadMATLABRt(float *Rt_relative, const char *filename) {
     fprintf(stderr, "%0.4f ", Rt_relative[i]);
   }
   fprintf(stderr, "\n");
+}
+
+// Modifying the original AddSiftData to add data from CPU memory, rather than
+// from GPU memory. Also, ignore subsampling for now.
+//
+// Original function:
+// void AddSiftData(SiftData &data, float *d_sift, float *d_desc, int numPts, int maxPts, float subsampling)
+void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts) {
+  // Compute new total number of points once we add new points
+  int newNum = data.numPts + numPts;
+
+  // If we haven't allocated enough memory for all of the points, double the
+  // memory
+  if (data.maxPts < newNum) {
+
+    // Get new amount of memory to allocate
+    int newMaxNum = 2 * data.maxPts;
+    while (newNum > newMaxNum)
+      newMaxNum *= 2;
+
+    // If we have host data, allocate new memory, copy over, and free old memory
+    if (data.h_data != NULL) {
+      SiftPoint *h_data = (SiftPoint *)malloc(sizeof(SiftPoint) * newMaxNum);
+      memcpy(h_data, data.h_data, sizeof(SiftPoint) * data.numPts);
+      free(data.h_data);
+      data.h_data = h_data;
+    }
+
+    // If we have device data, allocate new memory, copy over, and free old memory
+    if (data.d_data != NULL) {
+      SiftPoint *d_data = NULL;
+      safeCall(cudaMalloc((void**)&d_data, sizeof(SiftPoint) * newMaxNum));
+      safeCall(cudaMemcpy(d_data, data.d_data, sizeof(SiftPoint) * data.numPts, cudaMemcpyDeviceToDevice));
+      safeCall(cudaFree(data.d_data));
+      data.d_data = d_data;
+    }
+    data.maxPts = newMaxNum;
+  }
+
+  if (data.h_data != NULL) {
+    memcpy(data.h_data + data.numPts, h_data, sizeof(SiftPoint) * numPts);
+  }
+
+  if (data.d_data != NULL) {
+    safeCall(cudaMemcpy(data.d_data + data.numPts, h_data, sizeof(SiftPoint) * numPts, cudaMemcpyHostToDevice));
+  }
+
+  data.numPts = newNum;
 }

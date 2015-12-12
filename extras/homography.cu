@@ -1,6 +1,4 @@
-#include "cudaSift.h"
-#include "cudautils.h"
-#include <opencv2/core/core.hpp>
+#include "homography.h"
 
 template <int size>
 __device__ void InvertMatrix(float elem[size][size], float res[size][size]) 
