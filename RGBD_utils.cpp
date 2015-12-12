@@ -24,79 +24,91 @@ void writeMatToFile(cv::Mat& m, const char* filename)
   fout.close();
 }
 
-void ransacfitRt(const cv::Mat refCoord, const cv::Mat movCoord, float* rigidtransform, 
- int* numMatches, int numLoops, float thresh)
-{
-  cv::Mat coord(refCoord.size().height, refCoord.size().width+movCoord.size().width, CV_32FC1);
+/*
+ * refCoord: 3xnumPts 3D points in reference frame coordinates
+ * movCoord: 3xnumPts 3D points in next frame coordinates
+ * Rt_relative: 12 floats relative transform matrix
+ * numInliers: number of inliers
+ * numLoops: number of iterations to run RANSAC
+ * thresh: distance threshhold
+ *
+ * TODO:
+ * - Naming scheme is confusing (Estimate, Find, Compute Rigid Transform?)
+*/
+void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
+                            float* Rt_relative, int* numInliers, 
+                            int numLoops, float thresh) {
+
+  // Combine refCoord and movCoord into contiguous block of memory
+  cv::Mat coord(refCoord.size().height, refCoord.size().width + movCoord.size().width, CV_32FC1);
   cv::Mat left(coord, cv::Rect(0, 0, refCoord.size().width, refCoord.size().height));
   refCoord.copyTo(left);
   cv::Mat right(coord, cv::Rect(refCoord.size().width, 0, movCoord.size().width, movCoord.size().height));
   movCoord.copyTo(right);
-  float * h_coord = (float*)coord.data;
-  //writeMatToFile(coord, "h_coord.txt");
-  int numValid = refCoord.size().height;
+  float *h_coord = (float*)coord.data;
   
-  int randSize = 4*sizeof(int)*numLoops;
-  int* h_randPts = (int*)malloc(randSize);
+  // Number of matches
+  int numPts = refCoord.size().height;
   
-  // generate random samples for each loop
-  for (int i=0;i<numLoops;i++) {
-    int p1 = rand() % numValid;
-    int p2 = rand() % numValid;
-    int p3 = rand() % numValid;
-    while (p2==p1) p2 = rand() % numValid;
-    while (p3==p1 || p3==p2) p3 = rand() % numValid;
-    h_randPts[i+0*numLoops] = p1;
-    h_randPts[i+1*numLoops] = p2;
-    h_randPts[i+2*numLoops] = p3;
+  // First three elements per row stores the indices for the random points
+  int* h_randPts = (int*)malloc(3 * sizeof(int) * numLoops);
+  
+  // Choose three random points (their indices) for each iteration
+  for (int i = 0; i < numLoops; i++) {
+    int p1 = rand() % numPts;
+    int p2 = rand() % numPts;
+    int p3 = rand() % numPts;
+
+    // Make sure they are all unique
+    while (p2 == p1) p2 = rand() % numPts;
+    while (p3 == p1 || p3 == p2) p3 = rand() % numPts;
+
+    // Store the indices
+    h_randPts[i + 0 * numLoops] = p1;
+    h_randPts[i + 1 * numLoops] = p2;
+    h_randPts[i + 2 * numLoops] = p3;
   }
 
-  int h_count =-1;
-  float thresh2 = thresh*thresh;
+  FindRigidTransform(h_coord, h_randPts, Rt_relative, numInliers, numLoops, numPts, thresh * thresh);
 
-#ifdef CPURANSAC
-  float h_RT[12];
-  int maxIndex = -1;
-  int maxCount = -1;
-  for(int idx= 0;idx<numLoops;idx++){
+  free(h_randPts);
+// #ifdef CPURANSAC
+//   int h_count =-1;
+//   float h_RT[12];
+//   int maxIndex = -1;
+//   int maxCount = -1;
+//   for(int idx= 0;idx<numLoops;idx++){
 
-    estimateRigidTransform(h_coord, h_randPts, idx, numLoops, h_RT);
-    TestRigidTransform(h_coord, h_RT, &h_count, numValid, thresh2);
+//     estimateRigidTransform(h_coord, h_randPts, idx, numLoops, h_RT);
+//     TestRigidTransform(h_coord, h_RT, &h_count, numPts, thresh2);
 
-    if (h_count>maxCount){
-      maxCount = h_count;
-      for (int i = 0;i<12;i++){
-        rigidtransform[i] = h_RT[i];
-      }
-    }
-  }
+//     if (h_count>maxCount){
+//       maxCount = h_count;
+//       for (int i = 0;i<12;i++){
+//         Rt_relative[i] = h_RT[i];
+//       }
+//     }
+//   }
 
-  numMatches[0] = maxCount;
+//   numInliers[0] = maxCount;
 
-#endif
+// #endif
 
   // gpu ransac;
-  gpuRANSACfindRT(h_coord,h_randPts,rigidtransform,numMatches,numLoops,numValid,thresh2);
 #ifdef VERBOSE
   cout << endl;
   cout << "RANSAC Fit Rt" << endl;
 
   for (int i = 0; i < 12; i++) {
-    fprintf(stderr, "%0.4f ", rigidtransform[i]);
+    fprintf(stderr, "%0.4f ", Rt_relative[i]);
     if ((i + 1) % 4 == 0) cout << endl;
   }
   cout << endl;
   printf("Num loops: %d\n", numLoops);
   printf("Threshold %0.4f\n", thresh);
 
-  printf("numofMatch = %d \n",numMatches[0]);
+  printf("numofMatch = %d \n",numInliers[0]);
 #endif
-  // printf("rigidtransform\n");
-  // for (int jj =0; jj<3;jj++){
-  //     printf("%f,%f,%f,%f\n",rigidtransform[0+jj*4],rigidtransform[1+4*jj],rigidtransform[2+4*jj],rigidtransform[3+4*jj]);
-  // }
-
-  free(h_randPts);
 
   return;
 }

@@ -28,8 +28,9 @@ typedef struct Camera {
 ////////////////////////////////////////////////////////////////////////////////
 
 void writeMatToFile(cv::Mat& m, const char* filename);
-void ransacfitRt(const cv::Mat refCoord, const cv::Mat movCoord, float* rigidtransform, 
-                 int* numMatches,int numLoops, float thresh);
+void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
+                            float* Rt_relative, int* numInliers, 
+                            int numLoops, float thresh);
 
 unsigned int uchar2uint(unsigned char* in);
 void uint2uchar(unsigned int in, unsigned char* out);
