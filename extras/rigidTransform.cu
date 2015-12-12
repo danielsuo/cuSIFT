@@ -1,8 +1,5 @@
 #include "cudautils.h"
-#include <cstdio>
-#include <iostream>
-#include <cmath>
- 
+#include "rigidTransform.h"
 
 #define max(x,y) ((x)>(y)?(x):(y))
 #define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
@@ -620,22 +617,71 @@ void FindRigidTransform(const float *h_coord, int *h_randPts, float *Rt_relative
   #endif
 }
 
-/*
-int main() {
-  //float x_in[9] = {0,0,0,0,1,0,0,2,0};
-  //float y_in[9] = {0,0,0,0,2,0,0,3,0};
-  float x_in[9] = {0,0,0,0,1,0,0,2,0};
-  float y_in[9] = {-0.3,0.5,0,3,3,0,3,2,0};
-  float T[4][4];
-  estimateRigidTransform(x_in, y_in, T);
-
-
-  printf("T\n");
-  for (int jj = 0; jj<3;jj++) {
-    printf("%f,%f,%f,%f\n",T[jj][0],T[jj][1],T[jj][2],T[jj][3]);
-  }
-  return 0;
-}
+/* Convenience function to use OpenCV mat
+ *
+ * refCoord: 3xnumPts 3D points in reference frame coordinates
+ * movCoord: 3xnumPts 3D points in next frame coordinates
+ * Rt_relative: 12 floats relative transform matrix
+ * numInliers: number of inliers
+ * numLoops: number of iterations to run RANSAC
+ * thresh: distance threshhold
+ *
+ * TODO:
+ * - Naming scheme is confusing (Estimate, Find, Compute Rigid Transform?)
 */
+void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
+                            float* Rt_relative, int* numInliers, 
+                            int numLoops, float thresh) {
 
+  // Combine refCoord and movCoord into contiguous block of memory
+  cv::Mat coord(refCoord.size().height, refCoord.size().width + movCoord.size().width, CV_32FC1);
+  cv::Mat left(coord, cv::Rect(0, 0, refCoord.size().width, refCoord.size().height));
+  refCoord.copyTo(left);
+  cv::Mat right(coord, cv::Rect(refCoord.size().width, 0, movCoord.size().width, movCoord.size().height));
+  movCoord.copyTo(right);
+  float *h_coord = (float*)coord.data;
+  
+  // Number of matches
+  int numPts = refCoord.size().height;
+  
+  // First three elements per row stores the indices for the random points
+  int* h_randPts = (int*)malloc(3 * sizeof(int) * numLoops);
+  
+  // Choose three random points (their indices) for each iteration
+  for (int i = 0; i < numLoops; i++) {
+    int p1 = rand() % numPts;
+    int p2 = rand() % numPts;
+    int p3 = rand() % numPts;
+
+    // Make sure they are all unique
+    while (p2 == p1) p2 = rand() % numPts;
+    while (p3 == p1 || p3 == p2) p3 = rand() % numPts;
+
+    // Store the indices
+    h_randPts[i + 0 * numLoops] = p1;
+    h_randPts[i + 1 * numLoops] = p2;
+    h_randPts[i + 2 * numLoops] = p3;
+  }
+
+  FindRigidTransform(h_coord, h_randPts, Rt_relative, numInliers, numLoops, numPts, thresh * thresh);
+
+  free(h_randPts);
+  
+#ifdef VERBOSE
+  std::cout << std::endl;
+  std::cout << "RANSAC Fit Rt" << std::endl;
+
+  for (int i = 0; i < 12; i++) {
+    fprintf(stderr, "%0.4f ", Rt_relative[i]);
+    if ((i + 1) % 4 == 0) std::cout << std::endl;
+  }
+  std::cout << std::endl;
+  printf("Num loops: %d\n", numLoops);
+  printf("Threshold %0.4f\n", thresh);
+
+  printf("numofMatch = %d \n",numInliers[0]);
+#endif
+
+  return;
+}
  

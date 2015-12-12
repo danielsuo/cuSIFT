@@ -40,16 +40,16 @@ set(cuda_sources
   cudaImage.h
   cudaSiftH.cu
   cudaSiftH.h
-  matching.cu
   cudaSiftD.h
   cudaSift.h
   cudautils.h
-  estimateRTGPU.cu # gpu ransac
 )  
 
 set(sources
-  geomFuncs.cpp
-  RGBD_utils.cpp
+  extras/matching.cu
+  extras/rigidTransform.cu
+  extras/homography.cu
+  extras/debug.cpp
   main.cpp
 )
 

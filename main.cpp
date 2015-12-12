@@ -23,7 +23,7 @@ void MatchAll(SiftData &siftData1, SiftData &siftData2, float *homography);
 int main(int argc, char **argv) 
 { 
   if (argc < 4) {
-    std::cout << "Usage: ./cuSIFT leftImagePath rightImagePath outDir numDevices" << endl;
+    std::cout << "Usage: ./cuSIFT leftImagePath rightImagePath outDir numDevices" << std::endl;
     exit(1);
   }
 

@@ -1,4 +1,4 @@
-#include "RGBD_utils.h"
+#include "debug.h"
 ////////////////////////////////////////////////////////////////////////////////
 
 void writeMatToFile(cv::Mat& m, const char* filename)
@@ -24,105 +24,6 @@ void writeMatToFile(cv::Mat& m, const char* filename)
   fout.close();
 }
 
-/*
- * refCoord: 3xnumPts 3D points in reference frame coordinates
- * movCoord: 3xnumPts 3D points in next frame coordinates
- * Rt_relative: 12 floats relative transform matrix
- * numInliers: number of inliers
- * numLoops: number of iterations to run RANSAC
- * thresh: distance threshhold
- *
- * TODO:
- * - Naming scheme is confusing (Estimate, Find, Compute Rigid Transform?)
-*/
-void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
-                            float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh) {
-
-  // Combine refCoord and movCoord into contiguous block of memory
-  cv::Mat coord(refCoord.size().height, refCoord.size().width + movCoord.size().width, CV_32FC1);
-  cv::Mat left(coord, cv::Rect(0, 0, refCoord.size().width, refCoord.size().height));
-  refCoord.copyTo(left);
-  cv::Mat right(coord, cv::Rect(refCoord.size().width, 0, movCoord.size().width, movCoord.size().height));
-  movCoord.copyTo(right);
-  float *h_coord = (float*)coord.data;
-  
-  // Number of matches
-  int numPts = refCoord.size().height;
-  
-  // First three elements per row stores the indices for the random points
-  int* h_randPts = (int*)malloc(3 * sizeof(int) * numLoops);
-  
-  // Choose three random points (their indices) for each iteration
-  for (int i = 0; i < numLoops; i++) {
-    int p1 = rand() % numPts;
-    int p2 = rand() % numPts;
-    int p3 = rand() % numPts;
-
-    // Make sure they are all unique
-    while (p2 == p1) p2 = rand() % numPts;
-    while (p3 == p1 || p3 == p2) p3 = rand() % numPts;
-
-    // Store the indices
-    h_randPts[i + 0 * numLoops] = p1;
-    h_randPts[i + 1 * numLoops] = p2;
-    h_randPts[i + 2 * numLoops] = p3;
-  }
-
-  FindRigidTransform(h_coord, h_randPts, Rt_relative, numInliers, numLoops, numPts, thresh * thresh);
-
-  free(h_randPts);
-// #ifdef CPURANSAC
-//   int h_count =-1;
-//   float h_RT[12];
-//   int maxIndex = -1;
-//   int maxCount = -1;
-//   for(int idx= 0;idx<numLoops;idx++){
-
-//     estimateRigidTransform(h_coord, h_randPts, idx, numLoops, h_RT);
-//     TestRigidTransform(h_coord, h_RT, &h_count, numPts, thresh2);
-
-//     if (h_count>maxCount){
-//       maxCount = h_count;
-//       for (int i = 0;i<12;i++){
-//         Rt_relative[i] = h_RT[i];
-//       }
-//     }
-//   }
-
-//   numInliers[0] = maxCount;
-
-// #endif
-
-  // gpu ransac;
-#ifdef VERBOSE
-  cout << endl;
-  cout << "RANSAC Fit Rt" << endl;
-
-  for (int i = 0; i < 12; i++) {
-    fprintf(stderr, "%0.4f ", Rt_relative[i]);
-    if ((i + 1) % 4 == 0) cout << endl;
-  }
-  cout << endl;
-  printf("Num loops: %d\n", numLoops);
-  printf("Threshold %0.4f\n", thresh);
-
-  printf("numofMatch = %d \n",numInliers[0]);
-#endif
-
-  return;
-}
-
-unsigned int uchar2uint(unsigned char* in) {
-  return (((unsigned int)(in[0])) << 16) + (((unsigned int)(in[1])) << 8) + ((unsigned int)(in[2]));
-}
-
-void uint2uchar(unsigned int in, unsigned char* out) {
-  out[0] = (in & 0x00ff0000) >> 16;
-  out[1] = (in & 0x0000ff00) >> 8;
-  out[2] = in & 0x000000ff;
-}
-
 cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, cv::Mat rimg)
 {
   int numPts = siftData1.numPts;
@@ -146,9 +47,10 @@ cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, c
       }
     }
   }
-  //std::cout << std::setprecision(6);
+
   return im3;
 }
+
 void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   ofstream fout(filename);
   if (!fout)

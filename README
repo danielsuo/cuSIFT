@@ -1,6 +1,8 @@
 ### README
 This library is a CUDA implementation for various [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform) (Scale Invariant Feature Transform) operations and a few helper functions such as computing homographies and estimating rigid transforms using RANSAC. We borrow heavily from Mårten Björkman's CudaSift library, which can be found [here](https://github.com/Celebrandil/CudaSift). We have reproduced the original README below.
 
+Extra functionality lives, unsurprisingly, in the ```extras``` directory.
+
 ### Usage
 This package depends on CMake for compilation and OpenCV for image containers. See ```main.cpp``` for example usage.
 
