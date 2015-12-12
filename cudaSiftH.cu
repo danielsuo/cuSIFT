@@ -231,31 +231,6 @@ void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts) {
   }
 
   data.numPts = newNum;
-
-  // Subsample the first three rows of data (xpos, ypos, and scale) if needed
-  /*
-  int bwidth = sizeof(float) * numPts; 
-  float *buffer = (float *)malloc(3 * bwidth);
-
-  safeCall(cudaMemcpy2D(buffer, bwidth, h_sift, sizeof(float)*maxPts, bwidth, 3, cudaMemcpyDeviceToHost));
-  for (int i=0;i<3*numPts;i++) 
-    buffer[i] *= subsampling;
-  safeCall(cudaMemcpy2D(h_sift, sizeof(float)*maxPts, buffer, bwidth, bwidth, 3, cudaMemcpyHostToDevice));
-  safeCall(cudaThreadSynchronize());
-  */
-
-  // if (data.h_data != NULL) {
-  //   float *ptr = (float*)&data.h_data[data.numPts];
-  //   for (int i=0; i<6; i++)
-  //     safeCall(cudaMemcpy2D(&ptr[i], pitch, &h_sift[i*maxPts], 4, 4, numPts, cudaMemcpyDeviceToHost));
-  //   safeCall(cudaMemcpy2D(&ptr[16], pitch, h_desc, sizeof(float)*128, sizeof(float)*128, numPts, cudaMemcpyDeviceToHost));
-  // }
-  // if (data.d_data!=NULL) {
-  //   float *ptr = (float*)&data.d_data[data.numPts];
-  //   for (int i=0;i<6;i++)
-  //     safeCall(cudaMemcpy2D(&ptr[i], pitch, &h_sift[i*maxPts], 4, 4, numPts, cudaMemcpyDeviceToDevice));
-  //   safeCall(cudaMemcpy2D(&ptr[16], pitch, h_desc, sizeof(float)*128, sizeof(float)*128, numPts, cudaMemcpyDeviceToDevice));
-  // }
 }
 
 void FreeSiftData(SiftData &data)

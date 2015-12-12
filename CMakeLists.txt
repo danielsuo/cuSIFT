@@ -11,7 +11,11 @@ set(CPACK_PACKAGE_VERSION_PATCH "${cudaSift_VERSION_PATCH}")
 set(CPACK_GENERATOR "ZIP")
 include(CPack)
 
+if (APPLE)
+  set(OpenCV_DIR "/usr/local/Cellar/opencv3/3.0.0/share/OpenCV")
+endif()
 find_package(OpenCV REQUIRED)
+
 find_package(CUDA)
 if (NOT CUDA_FOUND)
   message(STATUS "CUDA not found. Project will not be built.")
@@ -46,7 +50,7 @@ set(cuda_sources
 set(sources
   geomFuncs.cpp
   RGBD_utils.cpp
-  mainSift.cpp
+  main.cpp
 )
 
 include_directories(
@@ -62,7 +66,7 @@ set_target_properties(cuSIFT PROPERTIES
 )
 
 target_link_libraries(cuSIFT
-  /usr/local/cuda/lib64/libcudadevrt.a ${OpenCV_LIBS} 
+  ${CUDA_LIBRARIES} ${OpenCV_LIBS} 
 )
  
 install(FILES 

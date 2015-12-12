@@ -21,15 +21,24 @@ void MatchAll(SiftData &siftData1, SiftData &siftData2, float *homography);
 // Main program
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char **argv) 
-{    
+{ 
+  if (argc < 4) {
+    std::cout << "Usage: ./cuSIFT leftImagePath rightImagePath outDir numDevices" << endl;
+    exit(1);
+  }
+
+  char *limgPath = argv[1];
+  char *rimgPath = argv[2];
+  char *outDir = argv[3];
+
   int devNum = 0;
-  if (argc>1)
-    devNum = std::atoi(argv[1]);
+  if (argc > 4)
+    devNum = std::atoi(argv[4]);
 
   // Read images using OpenCV
   cv::Mat limg, rimg;
-  cv::imread("data/left.pgm", 0).convertTo(limg, CV_32FC1);
-  cv::imread("data/righ.pgm", 0).convertTo(rimg, CV_32FC1);
+  cv::imread(limgPath, 0).convertTo(limg, CV_32FC1);
+  cv::imread(rimgPath, 0).convertTo(rimg, CV_32FC1);
   unsigned int w = limg.cols;
   unsigned int h = limg.rows;
   std::cout << "Image size = (" << w << "," << h << ")" << std::endl;
@@ -74,7 +83,7 @@ int main(int argc, char **argv)
 #endif
   std::cout << "Number of original features: " <<  siftData1.numPts << " " << siftData2.numPts << std::endl;
   std::cout << "Number of matching features: " << numFit << " " << numMatches << " " << 100.0f*numMatches/std::min(siftData1.numPts, siftData2.numPts) << "%" << std::endl;
-  cv::imwrite("data/limg_pts.pgm", limg);
+  cv::imwrite(outDir, limg);
 
   // Free Sift data from device
   FreeSiftData(siftData1);
