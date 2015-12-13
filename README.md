@@ -6,6 +6,9 @@ Extra functionality lives, unsurprisingly, in the ```extras``` directory.
 ### Usage
 This package depends on CMake for compilation and OpenCV for image containers. See ```main.cpp``` for example usage.
 
+### Changelog
+- 2015-12-13 v0.1.0: Initial release
+
 ### Original README
 This is the fourth version of a SIFT (Scale Invariant Feature Transform) implementation using CUDA for GPUs from NVidia. The first version is from 2007 and GPUs have evolved since then. This version is slightly more precise and considerably faster than the previous versions and has been optimized for Tesla K40 using larger images.
 
