@@ -1,9 +1,12 @@
 #ifndef RIGIDTRANSFORM_H
 #define RIGIDTRANSFORM_H
 
-#include "cuda_runtime_api.h"
 #include <opencv2/core/core.hpp>
 #include "cudautils.h"
+
+// Not strictly necessary, but because all other extras also include, creates
+// easier interface
+#include "cudaSift.h"
 
 void FindRigidTransform(const float *h_coord, int *h_randPts, float *Rt_relative, int *numInliers,
                         int numLoops, int numPts, float thresh2);

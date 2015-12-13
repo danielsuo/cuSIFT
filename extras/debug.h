@@ -7,10 +7,10 @@
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include <opencv2/imgproc/imgproc.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 #include "cuda_runtime_api.h"
-#include "cudaSift.h"
 #include "cudautils.h"
+#include "cudaSift.h"
 
 using namespace std;
 

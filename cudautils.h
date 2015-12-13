@@ -8,6 +8,8 @@
 #include <intrin.h>
 #endif
 
+#include "cuda_runtime_api.h"
+
 #define safeCall(err)       __safeCall(err, __FILE__, __LINE__)
 #define safeThreadSync()    __safeThreadSync(__FILE__, __LINE__)
 #define checkMsg(msg)       __checkMsg(msg, __FILE__, __LINE__)
