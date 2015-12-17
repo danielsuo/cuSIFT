@@ -24,7 +24,9 @@ void InitCuda(int devNum)
     return;
   }
   devNum = std::min(nDevices-1, devNum);
-  deviceInit(devNum);  
+  deviceInit(devNum);
+
+#ifdef VERBOSE
   cudaDeviceProp prop;
   cudaGetDeviceProperties(&prop, devNum);
   printf("Device Number: %d\n", devNum);
@@ -33,6 +35,7 @@ void InitCuda(int devNum)
   printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
   printf("  Peak Memory Bandwidth (GB/s): %.1f\n\n",
     2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
+#endif
 }
 
 void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling) 
