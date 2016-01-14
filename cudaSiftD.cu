@@ -220,15 +220,13 @@ __global__ void ConvertSiftToRootSift(SiftPoint *d_sift, int numPts) {
   if (p < numPts) {
     // Naive parallelization; just loop through the sift point histogram
     float sum = 0.0f;
-    float ssum = 0.0f;
     for (int i = 0; i < 128; i++) {
       sum += d_sift[p].data[i];
-      ssum += d_sift[p].data[i] * d_sift[p].data[i];
     }
 
     // L1 normalize and square root each element
     for (int i = 0; i < 128; i++) {
-      d_sift[p].data[i] = rsqrtf(d_sift[p].data[i] / sum);
+      d_sift[p].data[i] = sqrtf(d_sift[p].data[i] / sum);
     }
   }
 }

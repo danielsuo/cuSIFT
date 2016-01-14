@@ -1,5 +1,7 @@
 #include "matching.h"
 
+#define FLT_MAX 999.0
+
 //================= Device matching functions =====================//
 
 // sift1: array of SiftPoints from image 1
@@ -58,18 +60,17 @@ __global__ void ComputeDistance(SiftPoint *sift1, SiftPoint *sift2, float *corrD
 // Compute L2 norm. Note that because sift descriptors are 128-dimensional
 // unit vectors, we can compute the L2 norm as follow: L2(pt1, pt2) = ||pt1 -
 // pt2||^2 = ||pt1||^2 + ||pt2||^2 - 2x'y = 2 - 2x'y
-__global__ void ComputeL2Distance(float *corrData) {
-  // Get thread ids; threads are in 16x16x1 blocks
-  const int tx = threadIdx.x;
-  const int ty = threadIdx.y;
-
+__global__ void ComputeL2Distance(float *corrData, int numPts1) {
   // Get the global point index, not the local index within our 16x16 chunk
-  const int p1 = blockIdx.x * 16 + ty;
-  const int p2 = blockIdx.y * 16 + tx;
+  const int p1 = blockIdx.x * 16 + threadIdx.x;
+  const int p2 = blockIdx.y * 16 + threadIdx.y;
 
   // Make sure p1 and p2 are both within bounds
-  const int idx = p1 * gridDim.y * 16 + p2;
-  if (corrData[idx] > -1) corrData[idx] = 2 - 2 * corrData[idx];
+  if (p1 < numPts1) {
+    const int idx = p1 * gridDim.y * 16 + p2;
+    if (corrData[idx] > -1) corrData[idx] = 2 - 2 * corrData[idx];
+    else corrData[idx] = FLT_MAX;
+  }
 }
 
 __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2, int numPts1, int corrWidth, int siftSize) {
@@ -111,31 +112,32 @@ __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
       maxScore2[idx] = maxScore[idx];
       maxScore[idx] = val;
       maxIndex[idx] = i;
-    } else if (val > maxScore2[idx])
+    } else if (val > maxScore2[idx]) {
       maxScore2[idx] = val;
+    }
   }
 
   __syncthreads();
-
 
   for (int len = 8; len > 0; len /= 2) {
     if (tx < 8) {
       float val = maxScore[idx + len];
       int i = maxIndex[idx + len];
-      if (val>maxScore[idx]) {
-       maxScore2[idx] = maxScore[idx];
-       maxScore[idx] = val;
-       maxIndex[idx] = i;
-     } else if (val > maxScore2[idx])
-     maxScore2[idx] = val;
-     float va2 = maxScore2[idx + len];
-     if (va2 > maxScore2[idx])
-       maxScore2[idx] = va2;
+      if (val > maxScore[idx]) {
+        maxScore2[idx] = maxScore[idx];
+        maxScore[idx] = val;
+        maxIndex[idx] = i;
+      } else if (val > maxScore2[idx]) {
+        maxScore2[idx] = val;
+      }
+      float val2 = maxScore2[idx + len];
+      if (val2 > maxScore2[idx])
+       maxScore2[idx] = val2;
    }
-   __syncthreads();
+    __syncthreads();
   }
 
-  if (tx == 6)
+  if (tx == 6){}
     sift1[p1].score = maxScore[ty * 16];
   if (tx == 7)
     sift1[p1].ambiguity = maxScore2[ty * 16] / (maxScore[ty * 16] + 1e-6);
@@ -145,6 +147,84 @@ __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
     sift1[p1].match_xpos = sift2[maxIndex[ty * 16]].xpos;
   if (tx == 10)
     sift1[p1].match_ypos = sift2[maxIndex[ty * 16]].ypos;
+  __syncthreads();
+}
+
+__global__ void FindMinCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2, int numPts1, int corrWidth, int siftSize) {
+  // We are processing 16 points at a time
+  __shared__ float minScore[16 * 16];
+  __shared__ float minScore2[16 * 16];
+  __shared__ int minIndex[16 * 16];
+
+  // Get thread indices, which both range from 0 to 15
+  const int tx = threadIdx.x;
+  const int ty = threadIdx.y;
+
+  // Range from 0 to 255
+  const int idx = ty * 16 + tx;
+
+  // Get point index
+  int p1 = blockIdx.x * 16 + ty;
+  p1 = (p1 >= numPts1 ? numPts1 - 1 : p1);
+
+  // Initialize scores
+  minScore[idx] = FLT_MAX;
+  minScore2[idx] = FLT_MAX;
+  minIndex[idx] = -1;
+
+  // Synchronize threads before beginning to find match.
+  __syncthreads();
+
+  // Get the correlation data for point p1 against all the p2s
+  float *corrs = &corrData[p1 * corrWidth];
+
+  // Loop through all of the p2s
+  for (int i = tx; i < corrWidth; i += 16) {
+
+    // Correlation between p1 and the ith p2
+    float val = corrs[i];
+
+    // Find the two lowest scores for ratio testing later
+    if (val < minScore[idx]) {
+      minScore2[idx] = minScore[idx];
+      minScore[idx] = val;
+      minIndex[idx] = i;
+    } else if (val < minScore2[idx]) {
+      minScore2[idx] = val;
+    }
+  }
+
+  __syncthreads();
+
+  for (int len = 8; len > 0; len /= 2) {
+    if (tx < 8) {
+      float val = minScore[idx + len];
+      int i = minIndex[idx + len];
+      if (val < minScore[idx]) {
+        minScore2[idx] = minScore[idx];
+        minScore[idx] = val;
+        minIndex[idx] = i;
+      } else if (val < minScore2[idx]) {
+        minScore2[idx] = val;
+      }
+      float val2 = minScore2[idx + len];
+      if (val2 < minScore2[idx]) {
+        minScore2[idx] = val2;
+      }
+    }
+    __syncthreads();
+  }
+
+  if (tx == 6)
+    sift1[p1].score = minScore[ty * 16];
+  if (tx == 7)
+    sift1[p1].ambiguity = minScore[ty * 16] / (minScore2[ty * 16] + 1e-6);
+  if (tx == 8)
+    sift1[p1].match = minIndex[ty * 16];
+  if (tx == 9)
+    sift1[p1].match_xpos = sift2[minIndex[ty * 16]].xpos;
+  if (tx == 10)
+    sift1[p1].match_ypos = sift2[minIndex[ty * 16]].ypos;
   __syncthreads();
 }
 
@@ -193,7 +273,7 @@ double MatchSiftData(SiftData &data1, SiftData &data2, MatchSiftDistance distanc
 
     // If we want L2 distance, we need to do one step of extra processing.
     case MatchSiftDistanceL2:
-    ComputeL2Distance<<<blocks, threads>>>(d_corrData);
+    ComputeL2Distance<<<blocks, threads>>>(d_corrData, numPts1);
     break;
   }
   
@@ -204,7 +284,17 @@ double MatchSiftData(SiftData &data1, SiftData &data2, MatchSiftDistance distanc
   // the key points in the first image
   dim3 blocksMax(iDivUp(numPts1, 16));
   dim3 threadsMax(16, 16);
-  FindMaxCorr<<<blocksMax, threadsMax>>>(d_corrData, sift1, sift2, numPts1, corrWidth, sizeof(SiftPoint));
+
+  switch(distance) {
+    case MatchSiftDistanceDotProduct:
+    FindMaxCorr<<<blocksMax, threadsMax>>>(d_corrData, sift1, sift2, numPts1, corrWidth, sizeof(SiftPoint));
+    break;
+
+    // If we want L2 distance, we need to do one step of extra processing.
+    case MatchSiftDistanceL2:
+    FindMinCorr<<<blocksMax, threadsMax>>>(d_corrData, sift1, sift2, numPts1, corrWidth, sizeof(SiftPoint));
+    break;
+  }
 
   // Synchronize threads
   safeCall(cudaThreadSynchronize());

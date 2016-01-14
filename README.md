@@ -6,10 +6,13 @@ Extra functionality lives, unsurprisingly, in the ```extras``` directory.
 ### Usage
 This package depends on CMake for compilation and OpenCV for image containers. See ```main.cpp``` for example usage.
 
-### Changelog
+### Changelog (a.k.a what is new from the original repository)
 - 2015-01-14 v0.2.0: Feature updates
   - Add ExtractRootSift function based on [this](https://www.robots.ox.ac.uk/~vgg/publications/2012/Arandjelovic12/arandjelovic12.pdf) paper
+  - Add L2 distance option in SIFT matching
 - 2015-12-13 v0.1.0: Initial release
+  - Add estimating rigid transforms via RANSAC
+  - Refactor code not related to SIFT computation into extras (e.g., sift matching, finding homographies, finding rigid transforms)
 
 ### Original README
 This is the fourth version of a SIFT (Scale Invariant Feature Transform) implementation using CUDA for GPUs from NVidia. The first version is from 2007 and GPUs have evolved since then. This version is slightly more precise and considerably faster than the previous versions and has been optimized for Tesla K40 using larger images.
