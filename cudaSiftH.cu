@@ -38,9 +38,18 @@ void InitCuda(int devNum)
 #endif
 }
 
-void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling) 
+void SynchronizeSift(SiftData &siftData)
 {
-  TimerGPU timer(0);
+#ifdef MANAGEDMEM
+  safeCall(cudaDeviceSynchronize());
+#else
+  if (siftData.h_data)
+    safeCall(cudaMemcpy(siftData.h_data, siftData.d_data, sizeof(SiftPoint)*siftData.numPts, cudaMemcpyDeviceToHost));
+#endif
+}
+
+void ExtractSiftHelper(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
+{
   int totPts = 0;
   safeCall(cudaMemcpyToSymbol(d_PointCounter, &totPts, sizeof(int)));
   safeCall(cudaMemcpyToSymbol(d_MaxNumPoints, &siftData.maxPts, sizeof(int)));
@@ -68,13 +77,28 @@ void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double init
   safeCall(cudaMemcpyFromSymbol(&siftData.numPts, d_PointCounter, sizeof(int)));
   siftData.numPts = (siftData.numPts<siftData.maxPts ? siftData.numPts : siftData.maxPts);
   safeCall(cudaFree(memoryTmp));
-#ifdef MANAGEDMEM
-  safeCall(cudaDeviceSynchronize());
-#else
-  if (siftData.h_data)
-    safeCall(cudaMemcpy(siftData.h_data, siftData.d_data, sizeof(SiftPoint)*siftData.numPts, cudaMemcpyDeviceToHost));
-#endif
+}
+
+void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
+{
+  TimerGPU timer(0);
+  ExtractSiftHelper(siftData, img, numOctaves, initBlur, thresh, lowestScale, subsampling);
+  SynchronizeSift(siftData);
   double totTime = timer.read();
+
+#ifndef VERBOSE
+  printf("Total time incl memory =      %.2f ms\n", totTime);
+#endif
+}
+
+void ExtractRootSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
+{
+  TimerGPU timer(0);
+  ExtractSiftHelper(siftData, img, numOctaves, initBlur, thresh, lowestScale, subsampling);
+  ConvertSiftToRootSift(siftData);
+  SynchronizeSift(siftData);
+  double totTime = timer.read();
+
 #ifndef VERBOSE
   printf("Total time incl memory =      %.2f ms\n", totTime);
 #endif
@@ -252,6 +276,24 @@ double ExtractSiftDescriptors(cudaTextureObject_t texObj, SiftData &siftData, in
   ExtractSiftDescriptors<<<blocks, threads>>>(texObj, siftData.d_data, fstPts, subsampling);
 #endif
   checkMsg("ExtractSiftDescriptors() execution failed\n");
+  return 0.0; 
+}
+
+
+// TODO: Really, we should reimplement the end of ExtractSiftDescriptors in
+// cudaSiftD.cu so we don't do L2 normalization and then L1 normalization in
+// the case of RootSift
+double ConvertSiftToRootSift(SiftData &siftData) {
+  // For now, do naive parallelization. We are essentially creating a for loop
+  // over all the sift points
+  dim3 blocks(iDivUp(siftData.numPts, 16));
+  dim3 threads(16);
+#ifdef MANAGEDMEM
+  ConvertSiftToRootSift<<<blocks, threads>>>(siftData.m_data, siftData.numPts);
+#else
+  ConvertSiftToRootSift<<<blocks, threads>>>(siftData.d_data, siftData.numPts);
+#endif
+  checkMsg("ConvertSiftToRootSift() execution failed\n");
   return 0.0; 
 }
 

@@ -7,6 +7,8 @@ Extra functionality lives, unsurprisingly, in the ```extras``` directory.
 This package depends on CMake for compilation and OpenCV for image containers. See ```main.cpp``` for example usage.
 
 ### Changelog
+- 2015-01-14 v0.2.0: Feature updates
+  - Add ExtractRootSift function based on [this](https://www.robots.ox.ac.uk/~vgg/publications/2012/Arandjelovic12/arandjelovic12.pdf) paper
 - 2015-12-13 v0.1.0: Initial release
 
 ### Original README

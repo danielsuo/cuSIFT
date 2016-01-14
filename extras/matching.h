@@ -4,6 +4,12 @@
 #include "cudautils.h"
 #include "cudaSift.h"
 
-double MatchSiftData(SiftData &data1, SiftData &data2);
+typedef enum {
+  MatchSiftDistanceDotProduct,
+  MatchSiftDistanceL2
+} MatchSiftDistance;
+
+// Perform an exhaustive search between all sift key points between two images
+double MatchSiftData(SiftData &data1, SiftData &data2, MatchSiftDistance distance = MatchSiftDistanceDotProduct);
 
 #endif
