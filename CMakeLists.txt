@@ -53,30 +53,37 @@ set(sources
   main.cpp
 )
 
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR} /usr/local/include
-)
+include_directories(/usr/local/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CUDA_SEPARABLE_COMPILATION ON)
 
-cuda_add_executable(cuSIFT ${cuda_sources} ${sources})
+# cuda_add_executable(cuSIFT ${cuda_sources} ${sources})
 
-set_target_properties(cuSIFT PROPERTIES
-  COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"			   
-)
+# set_target_properties(cuSIFT PROPERTIES
+#   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"			   
+# )
 
-target_link_libraries(cuSIFT
-  ${CUDA_LIBRARIES} ${OpenCV_LIBS} 
-)
+# target_link_libraries(cuSIFT
+#   ${CUDA_LIBRARIES} ${OpenCV_LIBS} 
+# )
  
-install(FILES 
-  ${cuda_sources} 
-  ${sources}
-  cudaSiftD.cu
-  CMakeLists.txt
-  Copyright.txt
-  DESTINATION .
+# install(FILES 
+#   ${cuda_sources} 
+#   ${sources}
+#   cudaSiftD.cu
+#   CMakeLists.txt
+#   Copyright.txt
+#   DESTINATION .
+# )
+# install(FILES data/left.pgm data/righ.pgm
+#   DESTINATION data
+# )
+
+cuda_add_library (cuSIFT ${cuda_sources} ${sources})
+set_target_properties(cuSIFT PROPERTIES
+  COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"         
 )
-install(FILES data/left.pgm data/righ.pgm
-  DESTINATION data
-)
+target_link_libraries (cuSIFT ${CUDA_LIBRARIES} ${OpenCV_LIBS})
+target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/extras)
