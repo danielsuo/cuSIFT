@@ -226,7 +226,11 @@ __global__ void ConvertSiftToRootSift(SiftPoint *d_sift, int numPts) {
 
     // L1 normalize and square root each element
     for (int i = 0; i < 128; i++) {
+      float tmp = d_sift[p].data[i];
       d_sift[p].data[i] = sqrtf(d_sift[p].data[i] / sum);
+      if (isnan(d_sift[p].data[i])) {
+        printf("Found nan at %d, %d\n", p, i);
+      }
     }
   }
 }
