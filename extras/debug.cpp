@@ -121,7 +121,9 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
  * - float descriptors: 128 x numPts that contain descriptors (0.0 to 1.0)
 */
 void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
-  fprintf(stderr, "Reading vlfeat data from %s\n", filename);
+  fprintf(stderr, "Reading vlfeat data from %s", filename);
+
+  InitSiftData(siftData, 1024, true, true);
 
   FILE *fp = fopen(filename, "rb");
 
@@ -141,6 +143,8 @@ void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
   fclose(fp);
 
   SiftPoint *h_data = (SiftPoint *)calloc(numPts, sizeof(SiftPoint));
+
+  fprintf(stderr, " ... and got %d points\n", numPts);
 
   for (int i = 0; i < numPts; i++) {
     h_data[i].xpos = points[i * 4];
@@ -233,10 +237,10 @@ void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts) {
 
     // If we have host data, allocate new memory, copy over, and free old memory
     if (data.h_data != NULL) {
-      SiftPoint *h_data = (SiftPoint *)malloc(sizeof(SiftPoint) * newMaxNum);
-      memcpy(h_data, data.h_data, sizeof(SiftPoint) * data.numPts);
+      SiftPoint *tmp = (SiftPoint *)malloc(sizeof(SiftPoint) * newMaxNum);
+      memcpy(tmp, data.h_data, sizeof(SiftPoint) * data.numPts);
       free(data.h_data);
-      data.h_data = h_data;
+      data.h_data = tmp;
     }
 
     // If we have device data, allocate new memory, copy over, and free old memory
