@@ -222,6 +222,7 @@ void FreeSiftData(SiftData &data)
   data.d_data = NULL;
   if (data.h_data!=NULL)
     free(data.h_data);
+  data.h_data = NULL;
 #endif
   data.numPts = 0;
   data.maxPts = 0;
