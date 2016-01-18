@@ -228,19 +228,23 @@ __global__ void FindMinCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
   __syncthreads();
 }
 
-double MatchSiftData(SiftData &data1, SiftData &data2, MatchSiftDistance distance)
-{
+vector<SiftMatch *> MatchSiftData(SiftData &data1,
+                                  SiftData &data2,
+                                  MatchSiftDistance distance,
+                                  float scoreThreshold,
+                                  float ambiguityThreshold) {
   TimerGPU timer(0);
+  vector<SiftMatch *> matches;
   int numPts1 = data1.numPts;
   int numPts2 = data2.numPts;
   if (!numPts1 || !numPts2) 
-    return 0.0;
+    return matches;
 #ifdef MANAGEDMEM
   SiftPoint *sift1 = data1.m_data;
   SiftPoint *sift2 = data2.m_data;
 #else
   if (data1.d_data == NULL || data2.d_data == NULL)
-    return 0.0f;
+    return matches;
   SiftPoint *sift1 = data1.d_data;
   SiftPoint *sift2 = data2.d_data;
 #endif
@@ -308,9 +312,37 @@ double MatchSiftData(SiftData &data1, SiftData &data2, MatchSiftDistance distanc
     safeCall(cudaMemcpy2D(h_ptr, sizeof(SiftPoint), d_ptr, sizeof(SiftPoint), 5 * sizeof(float), data1.numPts, cudaMemcpyDeviceToHost));
   }
 
+  // TODO: When we refactor match data out of SiftPoint, move this to CUDA
+  // kernel. For now, create SiftMatch vector
+  for (int i = 0; i < data1.numPts; i++) {
+    bool foundMatch = false;
+    switch(distance) {
+      case MatchSiftDistanceDotProduct:
+      foundMatch = data1.h_data[i].score > scoreThreshold;
+      break;
+      case MatchSiftDistanceL2:
+      foundMatch = data1.h_data[i].score < scoreThreshold;
+      break;
+    }
+
+    foundMatch &= data1.h_data[i].ambiguity < ambiguityThreshold;
+
+    if (foundMatch) {
+      SiftMatch *match = new SiftMatch();
+
+      // We should clear out the SiftPoint memory for score, ambiguity, but we
+      // don't. They should be initialized in a constructor.
+      match->pt1 = &(data1.h_data[i]);
+      match->pt2 = &(data2.h_data[match->pt1->match]);
+      match->score = match->pt1->score;
+      match->ambiguity = match->pt1->ambiguity;
+      matches.push_back(match);
+    }
+  }
+
   double gpuTime = timer.read();
 #ifdef VERBOSE
   printf("MatchSiftData time =          %.2f ms\n", gpuTime);
 #endif
-  return gpuTime;
+  return matches;
 }

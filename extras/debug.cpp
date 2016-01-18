@@ -47,21 +47,27 @@ void PrintSiftData(SiftData &data)
     printf("score        = %.2f\n", h_data[i].score);
     float *siftData = (float*)&h_data[i].data;
     for (int j = 0; j < 8; j++) {
-      if (j == 0) 
-       printf("data = ");
-     else 
-       printf("       ");
-     for (int k = 0; k<16; k++)
-       if (siftData[j * 16 + k] < 0.01)
-         printf(" .   ");
-       else
-         printf("%.2f ", siftData[j * 16 + k]);
-       printf("\n");
-     }
-   }
-   printf("Number of available points: %d\n", data.numPts);
-   printf("Number of allocated points: %d\n", data.maxPts);
- }
+      if (j == 0) {
+        printf("data = ");
+      }
+      else {
+        printf("       ");
+      }
+      for (int k = 0; k<16; k++) {
+        if (siftData[j * 16 + k] < 0.01) {
+          printf(" .   ");
+        }
+        else {
+          printf("%.2f ", siftData[j * 16 + k]);
+        }
+      }
+      
+      printf("\n");
+    }
+  }
+  printf("Number of available points: %d\n", data.numPts);
+  printf("Number of allocated points: %d\n", data.maxPts);
+}
 
 cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, cv::Mat rimg)
 {
@@ -75,15 +81,13 @@ cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, c
 
   int w = limg.size().width + rimg.size().width;
   for (int j = 0; j < numPts; j++) {
-    if (sift1[j].valid == 1) {
-      float dx = sift1[j].match_xpos + limg.size().width - sift1[j].xpos;
-      float dy = sift1[j].match_ypos - sift1[j].ypos;
-      int len = (int)(fabs(dx) > fabs(dy) ? fabs(dx) : fabs(dy));
-      for (int l = 0; l < len; l++) {
-        int x = (int)(sift1[j].xpos + dx * l / len);
-        int y = (int)(sift1[j].ypos + dy * l / len);
-        im3.at<float>(y, x) = 255.0f;
-      }
+    float dx = sift1[j].match_xpos + limg.size().width - sift1[j].xpos;
+    float dy = sift1[j].match_ypos - sift1[j].ypos;
+    int len = (int)(fabs(dx) > fabs(dy) ? fabs(dx) : fabs(dy));
+    for (int l = 0; l < len; l++) {
+      int x = (int)(sift1[j].xpos + dx * l / len);
+      int y = (int)(sift1[j].ypos + dy * l / len);
+      im3.at<float>(y, x) = 255.0f;
     }
   }
 
@@ -99,15 +103,13 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   SiftPoint *sift1 = siftData1.h_data;
   for (int i = 0; i < siftData1.numPts; i++)
   {
-    if (sift1[i].valid) {
-      int ind  = ((int)sift1[i].xpos + (int)sift1[i].ypos * imgw);
-      int ind2 = ((int)sift1[i].match_xpos + (int)sift1[i].match_ypos * imgw);
+    int ind  = ((int)sift1[i].xpos + (int)sift1[i].ypos * imgw);
+    int ind2 = ((int)sift1[i].match_xpos + (int)sift1[i].match_ypos * imgw);
 
-      fout << sift1[i].xpos << "\t" << sift1[i].ypos << "\t";
-      fout << sift1[i].match_xpos << "\t" << sift1[i].match_ypos << "\t";
-      fout << ind << "\t" << ind2 << "\t";
-      fout << endl;
-    }
+    fout << sift1[i].xpos << "\t" << sift1[i].ypos << "\t";
+    fout << sift1[i].match_xpos << "\t" << sift1[i].match_ypos << "\t";
+    fout << ind << "\t" << ind2 << "\t";
+    fout << endl;
   }
 
   fout.close();
@@ -120,7 +122,7 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
  *   (in radians)
  * - float descriptors: 128 x numPts that contain descriptors (0.0 to 1.0)
 */
-void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
+ void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
   fprintf(stderr, "Reading vlfeat data from %s", filename);
 
   InitSiftData(siftData, 1024, true, true);

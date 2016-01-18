@@ -1,8 +1,11 @@
 #ifndef MATCHING_H
 #define MATCHING_H
 
+#include <vector>
 #include "cutils.h"
 #include "cuSIFT.h"
+
+using namespace std;
 
 typedef enum {
   MatchSiftDistanceDotProduct,
@@ -10,24 +13,21 @@ typedef enum {
 } MatchSiftDistance;
 
 typedef struct {
-  uint id;            // image id for tracking
-  uint idx;           // SiftPoint index in SiftData.*_data
-  float xim_coord;    // x coordinate in image
-  float yim_coord;    // y cooordinate in image
-  float x3D_coord;    // x coordinate in space
-  float y3D_coord;    // y coordinate in space
-  float z3D_coord;    // z coordinate in space
-} SiftMatchPointDesc;
+  // Pointers to SiftPoint data
+  SiftPoint *pt1;
+  SiftPoint *pt2;
 
-typedef struct {
-  SiftMatchPointDesc point1;
-  SiftMatchPointDesc point2;
-  float score;
-  float ambiguity;
+  // Match statistics
+  float score;      // Distance metric (e.g., dot product or L2 distance)
+  float ambiguity;  // Ratio of 2nd best and best match
   float error;
 } SiftMatch;
 
 // Perform an exhaustive search between all sift key points between two images
-double MatchSiftData(SiftData &data1, SiftData &data2, MatchSiftDistance distance = MatchSiftDistanceL2);
+vector<SiftMatch *> MatchSiftData(SiftData &data1,
+                                  SiftData &data2,
+                                  MatchSiftDistance distance = MatchSiftDistanceL2,
+                                  float scoreThreshold = 0.3,
+                                  float ambiguityThreshold = 0.36);
 
 #endif
