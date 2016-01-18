@@ -9,8 +9,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "cuda_runtime_api.h"
-#include "cudautils.h"
-#include "cudaSift.h"
+#include "cutils.h"
+#include "cuSIFT.h"
 
 using namespace std;
 

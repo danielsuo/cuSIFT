@@ -10,14 +10,14 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "cudaImage.h"
-#include "cudaSift.h"
+#include "cuImage.h"
+#include "cuSIFT.h"
 
 #include "extras/matching.h"
 #include "extras/homography.h"
 
 int ImproveHomography(SiftData &data, float *homography, int numLoops, float minScore, float maxAmbiguity, float thresh);
-void PrintMatchData(SiftData &siftData1, SiftData &siftData2, CudaImage &img);
+void PrintMatchData(SiftData &siftData1, SiftData &siftData2, cuImage &img);
 void MatchAll(SiftData &siftData1, SiftData &siftData2, float *homography);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
   // Initial Cuda images and download images to device
   std::cout << "Initializing data..." << std::endl;
   InitCuda(devNum);
-  CudaImage img1, img2;
+  cuImage img1, img2;
   img1.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)limg.data);
   img2.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)rimg.data);
   img1.Download();
@@ -139,7 +139,7 @@ void MatchAll(SiftData &siftData1, SiftData &siftData2, float *homography)
   std::cout << "Number of founds: " << numFound << std::endl;
 }
 
-void PrintMatchData(SiftData &siftData1, SiftData &siftData2, CudaImage &img)
+void PrintMatchData(SiftData &siftData1, SiftData &siftData2, cuImage &img)
 {
   int numPts = siftData1.numPts;
 #ifdef MANAGEDMEM

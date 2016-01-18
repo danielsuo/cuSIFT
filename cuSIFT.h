@@ -1,7 +1,7 @@
-#ifndef CUDASIFT_H
-#define CUDASIFT_H
+#ifndef CUSIFT_H
+#define CUSIFT_H
 
-#include "cudaImage.h"
+#include "cuImage.h"
 
 typedef struct {
   float xpos;
@@ -34,8 +34,8 @@ typedef struct {
 } SiftData;
 
 void InitCuda(int devNum = 0);
-void ExtractSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale = 0.0f, float subsampling = 1.0f);
-void ExtractRootSift(SiftData &siftData, CudaImage &img, int numOctaves, double initBlur, float thresh, float lowestScale = 0.0f, float subsampling = 1.0f);
+void ExtractSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale = 0.0f, float subsampling = 1.0f);
+void ExtractRootSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale = 0.0f, float subsampling = 1.0f);
 void InitSiftData(SiftData &data, int num = 1024, bool host = false, bool dev = true);
 void FreeSiftData(SiftData &data);
 

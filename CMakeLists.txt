@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
 
 project(cuSIFT)
 set(cudaSift_VERSION_MAJOR 2)
@@ -30,19 +30,19 @@ if (UNIX)
     set(EXTRA_CXX_FLAGS "-msse2")
     list(APPEND CUDA_NVCC_FLAGS "-arch=sm_35;--compiler-options;") 
   else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 ")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
     list(APPEND CUDA_NVCC_FLAGS "-lineinfo;--compiler-options;") 
   endif()
 endif()
 
 set(cuda_sources
-  cudaImage.cu
-  cudaImage.h
-  cudaSiftH.cu
-  cudaSiftH.h
-  cudaSiftD.h
-  cudaSift.h
-  cudautils.h
+  cuImage.cu
+  cuImage.h
+  cuSIFT_H.cu
+  cuSIFT_H.h
+  cuSIFT_D.h
+  cuSIFT.h
+  cutils.h
 )  
 
 set(sources

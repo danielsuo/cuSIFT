@@ -2,8 +2,8 @@
 // CUDA SIFT extractor by Marten Bjorkman aka Celebrandil //
 //********************************************************//  
 
-#ifndef CUDASIFTD_H
-#define CUDASIFTD_H
+#ifndef CUSIFTD_H
+#define CUSIFTD_H
 
 #define NUM_SCALES      5
 

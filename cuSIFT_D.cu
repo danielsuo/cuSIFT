@@ -2,9 +2,9 @@
 // CUDA SIFT extractor by Marten Bjorkman aka Celebrandil //
 //********************************************************//  
 
-#include "cudautils.h"
-#include "cudaSiftD.h"
-#include "cudaSift.h"
+#include "cutils.h"
+#include "cuSIFT_D.h"
+#include "cuSIFT.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Kernel configuration
@@ -228,9 +228,6 @@ __global__ void ConvertSiftToRootSift(SiftPoint *d_sift, int numPts) {
     for (int i = 0; i < 128; i++) {
       // Sometimes the SIFT data is some very small, but negative number
       d_sift[p].data[i] = sqrtf(max(0.0, d_sift[p].data[i]) / sum);
-      if (isnan(d_sift[p].data[i])) {
-        printf("Found nan at %d, %d, %0.4f, \n", p, i, sum);
-      }
     }
   }
 }

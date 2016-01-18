@@ -1,8 +1,8 @@
 #ifndef MATCHING_H
 #define MATCHING_H
 
-#include "cudautils.h"
-#include "cudaSift.h"
+#include "cutils.h"
+#include "cuSIFT.h"
 
 typedef enum {
   MatchSiftDistanceDotProduct,
