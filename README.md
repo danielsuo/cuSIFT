@@ -10,6 +10,7 @@ This package depends on CMake for compilation and OpenCV for image containers. S
 - 2015-01-14 v0.2.0: Feature updates
   - Add ExtractRootSift function based on [this](https://www.robots.ox.ac.uk/~vgg/publications/2012/Arandjelovic12/arandjelovic12.pdf) paper
   - Add L2 distance option in SIFT matching
+  - Add rigid transform on 2D
 - 2015-12-13 v0.1.0: Initial release
   - Add estimating rigid transforms via RANSAC
   - Refactor code not related to SIFT computation into extras (e.g., sift matching, finding homographies, finding rigid transforms)

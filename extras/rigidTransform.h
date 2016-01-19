@@ -8,12 +8,18 @@
 // easier interface
 #include "cuSIFT.h"
 
-void FindRigidTransform(const float *h_coord, int *h_randPts, float *Rt_relative, int *numInliers,
-                        int numLoops, int numPts, float thresh2);
+typedef enum {
+  RigidTransformType2D,
+  RigidTransformType3D
+} RigidTransformType;
+
+// Host function that doesn't use OpenCV Mat
+void EstimateRigidTransformH(const float *h_coord, int *h_randPts, float *Rt_relative, int *numInliers,
+                             int numLoops, int numPts, float thresh2, RigidTransformType type = RigidTransformType2D);
 
 // Convenience function to take cv::Mat data and generate random indices
 void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
                             float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh);
+                            int numLoops, float thresh, RigidTransformType type = RigidTransformType2D);
 
 #endif

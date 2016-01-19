@@ -340,8 +340,8 @@ __device__ void multi4by4 (float a[4][4],float b[4][4],float c[4][4]) {
 // idx: current index
 // numLoops: number of RANSAC loops
 // d_Rt_relative: resulting relative transformation
-__device__ void estimateRigidTransform(const float* d_coord, const int* d_randPts, 
-                                       int idx, int numLoops, float* d_Rt_relative) {
+__device__ void estimateRigidTransform3D(const float* d_coord, const int* d_randPts, 
+                                         int idx, int numLoops, float* d_Rt_relative) {
 
   // form the 3x3 point matrix
   int pointCount = 3;
@@ -516,6 +516,88 @@ __device__ void estimateRigidTransform(const float* d_coord, const int* d_randPt
   return;
 }
 
+// cuSIFT extras/rigidTransform.cu
+// For 2 point A and B only 
+// Aworld = R * Acamera + t
+// Bworld = R * Bcamera + t
+// y is totally ignore. value doesn't matter
+// 
+// d_coord: numPtsx6 matrix. First three elements per row stores the indices
+// for the random points and the fourth element holds the error (i.e., output)
+// d_randPts: 4xnumLoops matrix. First three elements hold indices to coords
+// idx: current index
+// numLoops: number of RANSAC loops
+// d_Rt: resulting relative transformation
+__device__ void estimateRigidTransform2D(const float* d_coord, const int* d_randPts, 
+                                         int idx, int numLoops, float* d_Rt) {
+  // read Point A
+  int pointIndexA6 = 6 * d_randPts[numLoops + idx];
+  float Pworld_Ax  = d_coord[pointIndexA6];
+  float Pworld_Az  = d_coord[pointIndexA6+2];
+  float Pcamera_Ax = d_coord[pointIndexA6+3];
+  float Pcamera_Az = d_coord[pointIndexA6+5];
+
+  // read Point B
+  int pointIndexB6 = 6 * d_randPts[numLoops + numLoops + idx];
+  float Pworld_Bx  = d_coord[pointIndexB6];
+  float Pworld_Bz  = d_coord[pointIndexB6+2];
+  float Pcamera_Bx = d_coord[pointIndexB6+3];
+  float Pcamera_Bz = d_coord[pointIndexB6+5];
+
+  // get the difference vector and normalize it to a unit vector
+
+  // world
+  float DXworld = Pworld_Ax - Pworld_Bx;  // the difference vector
+  float DZworld = Pworld_Az - Pworld_Bz;  // the difference vector
+  float LXZworld = sqrt(DXworld * DXworld + DZworld * DZworld); // the norm
+  float DXworld_norm = DXworld / LXZworld;  // unit vector
+  float DZworld_norm = DZworld / LXZworld;  // unit vector
+
+  // camera
+  float DXcamera = Pcamera_Ax - Pcamera_Bx; // the difference vector
+  float DZcamera = Pcamera_Az - Pcamera_Bz; // the difference vector
+  float LXZcamera = sqrt(DXcamera * DXcamera + DZcamera * DZcamera);  // the norm
+  float DXcamera_norm = DXcamera / LXZcamera; // unit vector
+  float DZcamera_norm = DZcamera / LXZcamera; // unit vector
+
+  // rotation angle
+  float cosAngle = DXworld_norm * DXcamera_norm + DZworld_norm * DZcamera_norm;
+  float sinAngle = DZworld_norm * DXcamera_norm - DXworld_norm * DZcamera_norm; 
+
+  // sum of the two points
+
+  // world
+  float SXworld = Pworld_Ax + Pworld_Bx;
+  float SZworld = Pworld_Az + Pworld_Bz;
+
+  // camera
+  float SXcamera = Pcamera_Ax + Pcamera_Bx;
+  float SZcamera = Pcamera_Az + Pcamera_Bz;
+
+  // writing results
+  int baseIdx = idx * 12;
+
+  // rotation
+  d_Rt[baseIdx + 0] = cosAngle;
+  d_Rt[baseIdx + 1] = 0;
+  d_Rt[baseIdx + 2] = -sinAngle;
+
+  d_Rt[baseIdx + 4] = 0;
+  d_Rt[baseIdx + 5] = 1;
+  d_Rt[baseIdx + 6] = 0;
+
+  d_Rt[baseIdx + 8] = sinAngle;
+  d_Rt[baseIdx + 9] = 0;
+  d_Rt[baseIdx + 10] = cosAngle;
+
+  // translation
+  d_Rt[baseIdx + 3] = (SXworld - cosAngle * SXcamera + sinAngle * SZcamera) / 2;
+  d_Rt[baseIdx + 7] = 0;
+  d_Rt[baseIdx + 11] = (SZworld - sinAngle * SXcamera - cosAngle * SZcamera) / 2;
+
+  return;
+}
+
 __device__ void testRigidTransform(float *d_coord, float *d_Rt_relative, int idx,
                                    int *d_counts, int numPts, float thresh2) {
   // Get Rt_relative for this thread
@@ -553,22 +635,32 @@ __device__ void testRigidTransform(float *d_coord, float *d_Rt_relative, int idx
   return;
 }
 
-__global__ void ComputeRigidTransform(float *d_coord, float *d_Rt_relative,
-                                      int *d_randPts, int numPts, float thresh2) {
+__global__ void EstimateRigidTransformD(float *d_coord, float *d_Rt_relative,
+                                        int *d_randPts, int numPts, float thresh2,
+                                        RigidTransformType type) {
   const int bx = blockIdx.x;
   const int tx = threadIdx.x;
   const int idx = blockDim.x * bx + tx;
   const int numLoops = blockDim.x * gridDim.x;
 
   // First, estimate the rigid transforms over all the loops
-  estimateRigidTransform(d_coord, d_randPts, idx, numLoops, d_Rt_relative);
+  switch(type) {
+    case RigidTransformType2D:
+    estimateRigidTransform2D(d_coord, d_randPts, idx, numLoops, d_Rt_relative);
+    break;
+
+    case RigidTransformType3D:
+    estimateRigidTransform3D(d_coord, d_randPts, idx, numLoops, d_Rt_relative);
+    break;
+  }
 
   // Next, test all the rigid transforms and make a choice
   testRigidTransform(d_coord, d_Rt_relative, idx, d_randPts, numPts, thresh2);
 }
 
-void FindRigidTransform(const float *h_coord, int *h_randPts, float *Rt_relative, int *numInliers,
-                        int numLoops, int numPts, float thresh2) {
+// Host function that doesn't use OpenCV Mat
+void EstimateRigidTransformH(const float *h_coord, int *h_randPts, float *Rt_relative, int *numInliers,
+                             int numLoops, int numPts, float thresh2, RigidTransformType type) {
   // Start timer
   TimerGPU timer(0);
 
@@ -586,7 +678,7 @@ void FindRigidTransform(const float *h_coord, int *h_randPts, float *Rt_relative
   safeCall(cudaMemcpy(d_coord, h_coord, 6*sizeof(float)*numPts, cudaMemcpyHostToDevice));
 
   // Run ransac to find Rt
-  ComputeRigidTransform<<<numLoops/128, 128>>>(d_coord, d_Rt_relative, d_randPts, numPts, thresh2);
+  EstimateRigidTransformD<<<numLoops/128, 128>>>(d_coord, d_Rt_relative, d_randPts, numPts, thresh2, type);
   checkMsg("ComputeHomographies() execution failed\n");
   safeCall(cudaThreadSynchronize());
 
@@ -624,13 +716,10 @@ void FindRigidTransform(const float *h_coord, int *h_randPts, float *Rt_relative
  * numInliers: number of inliers
  * numLoops: number of iterations to run RANSAC
  * thresh: distance threshhold
- *
- * TODO:
- * - Naming scheme is confusing (Estimate, Find, Compute Rigid Transform?)
 */
 void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
                             float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh) {
+                            int numLoops, float thresh, RigidTransformType type) {
 
   // Combine refCoord and movCoord into contiguous block of memory
   cv::Mat coord(refCoord.size().height, refCoord.size().width + movCoord.size().width, CV_32FC1);
@@ -662,7 +751,7 @@ void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord,
     h_randPts[i + 2 * numLoops] = p3;
   }
 
-  FindRigidTransform(h_coord, h_randPts, Rt_relative, numInliers, numLoops, numPts, thresh * thresh);
+  EstimateRigidTransformH(h_coord, h_randPts, Rt_relative, numInliers, numLoops, numPts, thresh * thresh, type);
 
   free(h_randPts);
   
