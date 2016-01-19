@@ -4,8 +4,7 @@
 #include "cuImage.h"
 
 typedef struct {
-  float xpos;
-  float ypos;   
+  float coords2D[2];
   float scale;
   float sharpness;
   float edgeness;
@@ -19,9 +18,7 @@ typedef struct {
   float subsampling;
   float empty[3];
   float data[128];
-  float x3Dpos;
-  float y3Dpos;
-  float z3Dpos;
+  float coords3D[3];
 } SiftPoint;
 
 typedef struct {

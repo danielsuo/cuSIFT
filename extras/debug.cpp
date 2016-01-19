@@ -38,8 +38,8 @@ void PrintSiftData(SiftData &data)
   }
 #endif
   for (int i=0;i<data.numPts;i++) {
-    printf("xpos         = %.2f\n", h_data[i].xpos);
-    printf("ypos         = %.2f\n", h_data[i].ypos);
+    printf("xpos         = %.2f\n", h_data[i].coords2D[0]);
+    printf("ypos         = %.2f\n", h_data[i].coords2D[1]);
     printf("scale        = %.2f\n", h_data[i].scale);
     printf("sharpness    = %.2f\n", h_data[i].sharpness);
     printf("edgeness     = %.2f\n", h_data[i].edgeness);
@@ -81,12 +81,12 @@ cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, c
 
   int w = limg.size().width + rimg.size().width;
   for (int j = 0; j < numPts; j++) {
-    float dx = sift1[j].match_xpos + limg.size().width - sift1[j].xpos;
-    float dy = sift1[j].match_ypos - sift1[j].ypos;
+    float dx = sift1[j].match_xpos + limg.size().width - sift1[j].coords2D[0];
+    float dy = sift1[j].match_ypos - sift1[j].coords2D[1];
     int len = (int)(fabs(dx) > fabs(dy) ? fabs(dx) : fabs(dy));
     for (int l = 0; l < len; l++) {
-      int x = (int)(sift1[j].xpos + dx * l / len);
-      int y = (int)(sift1[j].ypos + dy * l / len);
+      int x = (int)(sift1[j].coords2D[0] + dx * l / len);
+      int y = (int)(sift1[j].coords2D[1] + dy * l / len);
       im3.at<float>(y, x) = 255.0f;
     }
   }
@@ -103,10 +103,10 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   SiftPoint *sift1 = siftData1.h_data;
   for (int i = 0; i < siftData1.numPts; i++)
   {
-    int ind  = ((int)sift1[i].xpos + (int)sift1[i].ypos * imgw);
+    int ind  = ((int)sift1[i].coords2D[0] + (int)sift1[i].coords2D[1] * imgw);
     int ind2 = ((int)sift1[i].match_xpos + (int)sift1[i].match_ypos * imgw);
 
-    fout << sift1[i].xpos << "\t" << sift1[i].ypos << "\t";
+    fout << sift1[i].coords2D[0] << "\t" << sift1[i].coords2D[1] << "\t";
     fout << sift1[i].match_xpos << "\t" << sift1[i].match_ypos << "\t";
     fout << ind << "\t" << ind2 << "\t";
     fout << endl;
@@ -149,8 +149,8 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   fprintf(stderr, " ... and got %d points\n", numPts);
 
   for (int i = 0; i < numPts; i++) {
-    h_data[i].xpos = points[i * 4];
-    h_data[i].ypos = points[i * 4 + 1];
+    h_data[i].coords2D[0] = points[i * 4];
+    h_data[i].coords2D[1] = points[i * 4 + 1];
     h_data[i].scale = points[i * 4 + 2];
     h_data[i].orientation = points[i * 4 + 3];
 

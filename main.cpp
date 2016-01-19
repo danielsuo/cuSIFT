@@ -114,9 +114,9 @@ void MatchAll(SiftData &siftData1, SiftData &siftData2, float *homography)
       float sum = 0.0f;
       for (int k=0;k<128;k++) 
 	sum += data1[k]*data2[k];    
-      float den = homography[6]*sift1[i].xpos + homography[7]*sift1[i].ypos + homography[8];
-      float dx = (homography[0]*sift1[i].xpos + homography[1]*sift1[i].ypos + homography[2]) / den - sift2[j].xpos;
-      float dy = (homography[3]*sift1[i].xpos + homography[4]*sift1[i].ypos + homography[5]) / den - sift2[j].ypos;
+      float den = homography[6]*sift1[i].coords2D[0] + homography[7]*sift1[i].coords2D[1] + homography[8];
+      float dx = (homography[0]*sift1[i].coords2D[0] + homography[1]*sift1[i].coords2D[1] + homography[2]) / den - sift2[j].coords2D[0];
+      float dy = (homography[3]*sift1[i].coords2D[0] + homography[4]*sift1[i].coords2D[1] + homography[5]) / den - sift2[j].coords2D[1];
       float err = dx*dx + dy*dy;
       if (err<100.0f)
 	found = true;
@@ -156,11 +156,11 @@ void PrintMatchData(SiftData &siftData1, SiftData &siftData2, cuImage &img)
   for (int j=0;j<numPts;j++) { 
     int k = sift1[j].match;
     if (true || sift1[j].match_error<5) {
-      float dx = sift2[k].xpos - sift1[j].xpos;
-      float dy = sift2[k].ypos - sift1[j].ypos;
+      float dx = sift2[k].coords2D[0] - sift1[j].coords2D[0];
+      float dy = sift2[k].coords2D[1] - sift1[j].coords2D[1];
 #if 1
-      if (false && sift1[j].xpos>550 && sift1[j].xpos<600) {
-	std::cout << "pos1=(" << (int)sift1[j].xpos << "," << (int)sift1[j].ypos << ") ";
+      if (false && sift1[j].coords2D[0]>550 && sift1[j].coords2D[0]<600) {
+	std::cout << "pos1=(" << (int)sift1[j].coords2D[0] << "," << (int)sift1[j].coords2D[1] << ") ";
 	std::cout << j << ": " << "score=" << sift1[j].score << "  ambiguity=" << sift1[j].ambiguity << "  match=" << k << "  ";
 	std::cout << "scale=" << sift1[j].scale << "  ";
 	std::cout << "error=" << (int)sift1[j].match_error << "  ";
@@ -171,15 +171,15 @@ void PrintMatchData(SiftData &siftData1, SiftData &siftData2, cuImage &img)
 #if 1
       int len = (int)(fabs(dx)>fabs(dy) ? fabs(dx) : fabs(dy));
       for (int l=0;l<len;l++) {
-	int x = (int)(sift1[j].xpos + dx*l/len);
-	int y = (int)(sift1[j].ypos + dy*l/len);
+	int x = (int)(sift1[j].coords2D[0] + dx*l/len);
+	int y = (int)(sift1[j].coords2D[1] + dy*l/len);
 	h_img[y*w+x] = 255.0f;
       }	
 #endif
     }
 #if 1
-    int x = (int)(sift1[j].xpos+0.5);
-    int y = (int)(sift1[j].ypos+0.5);
+    int x = (int)(sift1[j].coords2D[0]+0.5);
+    int y = (int)(sift1[j].coords2D[1]+0.5);
     int s = std::min(x, std::min(y, std::min(w-x-2, std::min(h-y-2, (int)(1.41*sift1[j].scale)))));
     int p = y*w + x;
     p += (w+1);

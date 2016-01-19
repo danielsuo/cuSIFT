@@ -120,8 +120,8 @@ __global__ void ExtractSiftDescriptors(cudaTextureObject_t texObj, SiftPoint *d_
   float scosa = scale*cosa;
 
   for (int y=ty;y<16;y+=8) {
-    float xpos = d_sift[bx].xpos + (tx-7.5f)*scosa - (y-7.5f)*ssina;
-    float ypos = d_sift[bx].ypos + (tx-7.5f)*ssina + (y-7.5f)*scosa;
+    float xpos = d_sift[bx].coords2D[0] + (tx-7.5f)*scosa - (y-7.5f)*ssina;
+    float ypos = d_sift[bx].coords2D[1] + (tx-7.5f)*ssina + (y-7.5f)*scosa;
     float dx = tex2D<float>(texObj, xpos+cosa, ypos+sina) - 
       tex2D<float>(texObj, xpos-cosa, ypos-sina);
     float dy = tex2D<float>(texObj, xpos-sina, ypos+cosa) - 
@@ -206,8 +206,8 @@ __global__ void ExtractSiftDescriptors(cudaTextureObject_t texObj, SiftPoint *d_
   float *desc = d_sift[bx].data;
   desc[idx] = buffer[idx] * rsqrtf(tsum2);
   if (idx==0) {
-    d_sift[bx].xpos *= subsampling;
-    d_sift[bx].ypos *= subsampling;
+    d_sift[bx].coords2D[0] *= subsampling;
+    d_sift[bx].coords2D[1] *= subsampling;
     d_sift[bx].scale *= subsampling;
   }
 }
@@ -243,8 +243,8 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_sif
   if (tx<64)
     hist[tx] = 0.0f;
   __syncthreads();
-  float xp = d_sift[bx].xpos - 5.0f;
-  float yp = d_sift[bx].ypos - 5.0f;
+  float xp = d_sift[bx].coords2D[0] - 5.0f;
+  float yp = d_sift[bx].coords2D[1] - 5.0f;
   int yd = tx/11;
   int xd = tx - yd*11;
   float xf = xp + xd;
@@ -299,8 +299,8 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_sif
       float peak = i2 + 0.5f*(val1-val2) / (2.0f*maxval2-val1-val2);
       unsigned int idx = atomicInc(d_PointCounter, 0x7fffffff);
       if (idx<d_MaxNumPoints) {
-       d_sift[idx].xpos = d_sift[bx].xpos;
-       d_sift[idx].ypos = d_sift[bx].ypos;
+       d_sift[idx].coords2D[0] = d_sift[bx].coords2D[0];
+       d_sift[idx].coords2D[1] = d_sift[bx].coords2D[1];
        d_sift[idx].scale = d_sift[bx].scale;
        d_sift[idx].sharpness = d_sift[bx].sharpness;
        d_sift[idx].edgeness = d_sift[bx].edgeness;
@@ -428,8 +428,8 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_sif
       int maxPts = d_MaxNumPoints;
       unsigned int idx = atomicInc(d_PointCounter, 0x7fffffff);
       idx = (idx>=maxPts ? maxPts-1 : idx);
-      d_sift[idx].xpos = xpos + pdx;
-      d_sift[idx].ypos = ypos + pdy;
+      d_sift[idx].coords2D[0] = xpos + pdx;
+      d_sift[idx].coords2D[1] = ypos + pdy;
       d_sift[idx].scale = d_Scales[scale] * exp2f(pds*d_Factor);
       d_sift[idx].sharpness = val + dval;
       d_sift[idx].edgeness = edge;

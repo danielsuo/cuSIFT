@@ -234,8 +234,8 @@ double FindHomography(SiftData &data, float *homography, int *numMatches, int nu
       h_randPts[i+3*numLoops] = validPts[p4];
     }
     safeCall(cudaMemcpy(d_randPts, h_randPts, randSize, cudaMemcpyHostToDevice));
-    safeCall(cudaMemcpy2D(&d_coord[0*numPtsUp], szFl, &d_sift[0].xpos, szPt, szFl, numPts, cudaMemcpyDeviceToDevice));
-    safeCall(cudaMemcpy2D(&d_coord[1*numPtsUp], szFl, &d_sift[0].ypos, szPt, szFl, numPts, cudaMemcpyDeviceToDevice));
+    safeCall(cudaMemcpy2D(&d_coord[0*numPtsUp], szFl, &d_sift[0].coords2D[0], szPt, szFl, numPts, cudaMemcpyDeviceToDevice));
+    safeCall(cudaMemcpy2D(&d_coord[1*numPtsUp], szFl, &d_sift[0].coords2D[1], szPt, szFl, numPts, cudaMemcpyDeviceToDevice));
     safeCall(cudaMemcpy2D(&d_coord[2*numPtsUp], szFl, &d_sift[0].match_xpos, szPt, szFl, numPts, cudaMemcpyDeviceToDevice));
     safeCall(cudaMemcpy2D(&d_coord[3*numPtsUp], szFl, &d_sift[0].match_ypos, szPt, szFl, numPts, cudaMemcpyDeviceToDevice));
     ComputeHomographies<<<numLoops/16, 16>>>(d_coord, d_randPts, d_homo, numPtsUp);
@@ -291,27 +291,27 @@ int ImproveHomography(SiftData &data, float *homography, int numLoops, float min
       SiftPoint &pt = mpts[i];
       if (pt.score<minScore || pt.ambiguity>maxAmbiguity)
   continue;
-      float den = A.at<double>(6)*pt.xpos + A.at<double>(7)*pt.ypos + 1.0f;
-      float dx = (A.at<double>(0)*pt.xpos + A.at<double>(1)*pt.ypos + A.at<double>(2)) / den - pt.match_xpos;
-      float dy = (A.at<double>(3)*pt.xpos + A.at<double>(4)*pt.ypos + A.at<double>(5)) / den - pt.match_ypos;
+      float den = A.at<double>(6)*pt.coords2D[0] + A.at<double>(7)*pt.coords2D[1] + 1.0f;
+      float dx = (A.at<double>(0)*pt.coords2D[0] + A.at<double>(1)*pt.coords2D[1] + A.at<double>(2)) / den - pt.match_xpos;
+      float dy = (A.at<double>(3)*pt.coords2D[0] + A.at<double>(4)*pt.coords2D[1] + A.at<double>(5)) / den - pt.match_ypos;
       float err = dx*dx + dy*dy;
       float wei = limit / (err + limit);
-      Y[0] = pt.xpos;
-      Y[1] = pt.ypos;
+      Y[0] = pt.coords2D[0];
+      Y[1] = pt.coords2D[1];
       Y[2] = 1.0;
       Y[3] = Y[4] = Y[5] = 0.0;
-      Y[6] = - pt.xpos * pt.match_xpos;
-      Y[7] = - pt.ypos * pt.match_xpos;
+      Y[6] = - pt.coords2D[0] * pt.match_xpos;
+      Y[7] = - pt.coords2D[1] * pt.match_xpos;
       for (int c=0;c<8;c++) 
         for (int r=0;r<8;r++) 
           M.at<double>(r,c) += (Y[c] * Y[r] * wei);
       X += (cv::Mat(8,1,CV_64FC1,Y) * pt.match_xpos * wei);
       Y[0] = Y[1] = Y[2] = 0.0;
-      Y[3] = pt.xpos;
-      Y[4] = pt.ypos; 
+      Y[3] = pt.coords2D[0];
+      Y[4] = pt.coords2D[1]; 
       Y[5] = 1.0;
-      Y[6] = - pt.xpos * pt.match_ypos;
-      Y[7] = - pt.ypos * pt.match_ypos;
+      Y[6] = - pt.coords2D[0] * pt.match_ypos;
+      Y[7] = - pt.coords2D[1] * pt.match_ypos;
       for (int c=0;c<8;c++) 
         for (int r=0;r<8;r++) 
           M.at<double>(r,c) += (Y[c] * Y[r] * wei);
@@ -322,9 +322,9 @@ int ImproveHomography(SiftData &data, float *homography, int numLoops, float min
   int numfit = 0;
   for (int i=0;i<numPts;i++) {
     SiftPoint &pt = mpts[i];
-    float den = A.at<double>(6)*pt.xpos + A.at<double>(7)*pt.ypos + 1.0;
-    float dx = (A.at<double>(0)*pt.xpos + A.at<double>(1)*pt.ypos + A.at<double>(2)) / den - pt.match_xpos;
-    float dy = (A.at<double>(3)*pt.xpos + A.at<double>(4)*pt.ypos + A.at<double>(5)) / den - pt.match_ypos;
+    float den = A.at<double>(6)*pt.coords2D[0] + A.at<double>(7)*pt.coords2D[1] + 1.0;
+    float dx = (A.at<double>(0)*pt.coords2D[0] + A.at<double>(1)*pt.coords2D[1] + A.at<double>(2)) / den - pt.match_xpos;
+    float dy = (A.at<double>(3)*pt.coords2D[0] + A.at<double>(4)*pt.coords2D[1] + A.at<double>(5)) / den - pt.match_ypos;
     float err = dx*dx + dy*dy;
     if (err<limit) 
       numfit++;

@@ -659,7 +659,7 @@ __global__ void EstimateRigidTransformD(float *d_coord, float *d_Rt_relative,
 }
 
 // Host function that doesn't use OpenCV Mat
-void EstimateRigidTransformH(const float *h_coord, int *h_randPts, float *Rt_relative, int *numInliers,
+void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numInliers,
                              int numLoops, int numPts, float thresh2, RigidTransformType type) {
   // Start timer
   TimerGPU timer(0);
@@ -667,6 +667,26 @@ void EstimateRigidTransformH(const float *h_coord, int *h_randPts, float *Rt_rel
   // Pointers to device memory
   float *d_coord, *d_Rt_relative;
   int *d_randPts;
+
+  // TODO: Move to kernel
+  // First three elements per row stores the indices for the random points
+  int* h_randPts = (int*)malloc(3 * sizeof(int) * numLoops);
+  
+  // Choose three random points (their indices) for each iteration
+  for (int i = 0; i < numLoops; i++) {
+    int p1 = rand() % numPts;
+    int p2 = rand() % numPts;
+    int p3 = rand() % numPts;
+
+    // Make sure they are all unique
+    while (p2 == p1) p2 = rand() % numPts;
+    while (p3 == p1 || p3 == p2) p3 = rand() % numPts;
+
+    // Store the indices
+    h_randPts[i + 0 * numLoops] = p1;
+    h_randPts[i + 1 * numLoops] = p2;
+    h_randPts[i + 2 * numLoops] = p3;
+  }
 
   // Allocate device memory
   safeCall(cudaMalloc((void **)&d_coord, 6*sizeof(float)*numPts));
@@ -701,11 +721,25 @@ void EstimateRigidTransformH(const float *h_coord, int *h_randPts, float *Rt_rel
   safeCall(cudaFree(d_Rt_relative));
   safeCall(cudaFree(d_randPts));
   safeCall(cudaFree(d_coord));
+  free(h_randPts);
   
-  #ifdef VERBOSE
-    double gpuTime = timer.read();
-    printf("FindRigidTransform time =         %.2f ms\n", gpuTime);
-  #endif
+#ifdef VERBOSE
+  double gpuTime = timer.read();
+  printf("FindRigidTransform time =         %.2f ms\n", gpuTime);
+  std::cout << std::endl;
+  std::cout << "RANSAC Fit Rt" << std::endl;
+
+  for (int i = 0; i < 12; i++) {
+    fprintf(stderr, "%0.4f ", Rt_relative[i]);
+    if ((i + 1) % 4 == 0) std::cout << std::endl;
+  }
+
+  std::cout << std::endl;
+  printf("Num loops: %d\n", numLoops);
+  printf("Threshold^2 %0.4f\n", thresh2);
+
+  printf("numofMatch = %d \n",numInliers[0]);
+#endif
 }
 
 /* Convenience function to use OpenCV mat
@@ -731,45 +765,23 @@ void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord,
   
   // Number of matches
   int numPts = refCoord.size().height;
-  
-  // First three elements per row stores the indices for the random points
-  int* h_randPts = (int*)malloc(3 * sizeof(int) * numLoops);
-  
-  // Choose three random points (their indices) for each iteration
-  for (int i = 0; i < numLoops; i++) {
-    int p1 = rand() % numPts;
-    int p2 = rand() % numPts;
-    int p3 = rand() % numPts;
 
-    // Make sure they are all unique
-    while (p2 == p1) p2 = rand() % numPts;
-    while (p3 == p1 || p3 == p2) p3 = rand() % numPts;
-
-    // Store the indices
-    h_randPts[i + 0 * numLoops] = p1;
-    h_randPts[i + 1 * numLoops] = p2;
-    h_randPts[i + 2 * numLoops] = p3;
-  }
-
-  EstimateRigidTransformH(h_coord, h_randPts, Rt_relative, numInliers, numLoops, numPts, thresh * thresh, type);
-
-  free(h_randPts);
-  
-#ifdef VERBOSE
-  std::cout << std::endl;
-  std::cout << "RANSAC Fit Rt" << std::endl;
-
-  for (int i = 0; i < 12; i++) {
-    fprintf(stderr, "%0.4f ", Rt_relative[i]);
-    if ((i + 1) % 4 == 0) std::cout << std::endl;
-  }
-  std::cout << std::endl;
-  printf("Num loops: %d\n", numLoops);
-  printf("Threshold %0.4f\n", thresh);
-
-  printf("numofMatch = %d \n",numInliers[0]);
-#endif
+  EstimateRigidTransformH(h_coord, Rt_relative, numInliers, numLoops, numPts, thresh * thresh, type);
 
   return;
 }
  
+// Convenience function to use vector of SiftMatch objects. Arguments are the same as above.
+void EstimateRigidTransform(vector<SiftMatch *> matches, float* Rt_relative, int* numInliers, 
+                            int numLoops, float thresh, RigidTransformType type) {
+  // Combine data into a contiguous block of memory
+  float *h_coord = new float[6 * matches.size()];
+  for (int i = 0; i < matches.size(); i++) {
+    memcpy(h_coord + 6 * i, matches[i]->pt1->coords3D, sizeof(float) * 3);
+    memcpy(h_coord + 6 * i + 3, matches[i]->pt2->coords3D, sizeof(float) * 3);
+  }
+
+  EstimateRigidTransformH(h_coord, Rt_relative, numInliers, numLoops, matches.size(), thresh * thresh, type);
+
+  free(h_coord);
+}

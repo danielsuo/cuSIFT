@@ -144,9 +144,9 @@ __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
   if (tx == 8)
     sift1[p1].match = maxIndex[ty * 16];
   if (tx == 9)
-    sift1[p1].match_xpos = sift2[maxIndex[ty * 16]].xpos;
+    sift1[p1].match_xpos = sift2[maxIndex[ty * 16]].coords2D[0];
   if (tx == 10)
-    sift1[p1].match_ypos = sift2[maxIndex[ty * 16]].ypos;
+    sift1[p1].match_ypos = sift2[maxIndex[ty * 16]].coords2D[1];
   __syncthreads();
 }
 
@@ -222,9 +222,9 @@ __global__ void FindMinCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
   if (tx == 8)
     sift1[p1].match = minIndex[ty * 16];
   if (tx == 9)
-    sift1[p1].match_xpos = sift2[minIndex[ty * 16]].xpos;
+    sift1[p1].match_xpos = sift2[minIndex[ty * 16]].coords2D[0];
   if (tx == 10)
-    sift1[p1].match_ypos = sift2[minIndex[ty * 16]].ypos;
+    sift1[p1].match_ypos = sift2[minIndex[ty * 16]].coords2D[1];
   __syncthreads();
 }
 
