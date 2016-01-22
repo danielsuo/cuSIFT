@@ -11,6 +11,7 @@
 #include "cuda_runtime_api.h"
 #include "cutils.h"
 #include "cuSIFT.h"
+#include "extras/matching.h"
 
 using namespace std;
 
@@ -22,7 +23,9 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw);
 
 void ReadVLFeatSiftData(SiftData &siftData, const char *filename);
 void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *filename);
-void ReadMATLABRt(float *Rt_relative, const char *filename);
+vector<SiftMatch *> ReadMATLABMatchData(const char *filename);
+void ReadMATLABRt(double *Rt_relative, const char *filename);
+vector<int> ReadMATLABIndices(const char *filename);
 
 void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts);
 

@@ -175,8 +175,8 @@ void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *f
 
   // Next, grab matrix containing world coordinates from current frame and
   // world coordinates from next frame (x1, y1, z1, x2, y2, z2)
-  float *matchedPoints = new float[6 * numPts];
-  fread((void *)matchedPoints, sizeof(float), 6 * numPts, fp);
+  double *matchedPoints = new double[6 * numPts];
+  fread((void *)matchedPoints, sizeof(double), 6 * numPts, fp);
 
   // Resize the match matrices
   curr_match.resize(numPts);
@@ -205,11 +205,72 @@ void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *f
   free(matchedPoints);
 }
 
-void ReadMATLABRt(float *Rt_relative, const char *filename) {
+vector<SiftMatch *> ReadMATLABMatchData(const char *filename) {
+  fprintf(stderr, "Reading MATLAB match data from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+
+  uint32_t numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+
+  vector<SiftMatch *> matches;
+
+  for (int i = 0; i < numPts; i++) {
+    SiftMatch *match = new SiftMatch();
+    SiftPoint *pt1 = new SiftPoint();
+    SiftPoint *pt2 = new SiftPoint();
+
+    double coords1[3];
+    double coords2[3];
+
+    fread((void *)coords1, sizeof(double), 3, fp);
+    fread((void *)coords2, sizeof(double), 3, fp);
+
+    pt1->coords3D[0] = coords1[0];
+    pt1->coords3D[1] = coords1[1];
+    pt1->coords3D[2] = coords1[2];
+    pt2->coords3D[0] = coords2[0];
+    pt2->coords3D[1] = coords2[1];
+    pt2->coords3D[2] = coords2[2];
+
+    match->pt1 = pt1;
+    match->pt2 = pt2;
+
+    matches.push_back(match);
+  }
+
+  return(matches);
+}
+
+vector<int> ReadMATLABIndices(const char *filename) {
+  fprintf(stderr, "Reading MATLAB indices data from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+  uint32_t nPairs;
+  fread((void *)&nPairs, sizeof(uint32_t), 1, fp);
+
+  vector<int> results;
+  for (int i = 0; i < nPairs; i++) {
+    uint32_t tmp;
+    fread((void *)&tmp, sizeof(uint32_t), 1, fp);
+    results.push_back(tmp - 1);
+
+    fread((void *)&tmp, sizeof(uint32_t), 1, fp);
+    results.push_back(tmp - 1);
+  }
+
+  for (int i = 0; i < nPairs; i++) {
+    cerr << "Got pairs " << results[2 * i] << " " << results[2 * i + 1] << endl;;
+  }
+
+  return results;
+}
+
+void ReadMATLABRt(double *Rt_relative, const char *filename) {
   fprintf(stderr, "Reading MATLAB Rt data from %s\n", filename);
 
   FILE *fp = fopen(filename, "rb");
-  fread((void *)Rt_relative, sizeof(float), 12, fp);
+  fread((void *)Rt_relative, sizeof(double), 12, fp);
   fclose(fp);
 
   fprintf(stderr, "MATLAB Rt: ");
