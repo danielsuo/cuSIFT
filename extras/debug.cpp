@@ -164,6 +164,26 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   free(h_data);
 }
 
+vector<float *> ReadVLFeatSiftDataAsFloatArray(const char *filename) {
+  fprintf(stderr, "Reading vlfeat sift data as double array from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+
+  uint32_t numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+  vector<float *> siftPoints;
+
+  for (int i = 0; i < numPts; i++) {
+    float siftPoint[128];
+    fread((void *)siftPoint, sizeof(float), 128, fp);
+    siftPoints.push_back(siftPoint);
+  }
+
+  fclose(fp);
+
+  return siftPoints;
+}
+
 void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *filename) {
   fprintf(stderr, "Reading MATLAB match data from %s\n", filename);
 
@@ -257,10 +277,6 @@ vector<int> ReadMATLABIndices(const char *filename) {
 
     fread((void *)&tmp, sizeof(uint32_t), 1, fp);
     results.push_back(tmp - 1);
-  }
-
-  for (int i = 0; i < nPairs; i++) {
-    cerr << "Got pairs " << results[2 * i] << " " << results[2 * i + 1] << endl;;
   }
 
   return results;

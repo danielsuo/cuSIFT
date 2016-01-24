@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <opencv2/core/core.hpp>
+#include <cusolverDn.h>
 #include "extras/matching.h"
 #include "cutils.h"
 

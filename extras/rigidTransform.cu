@@ -273,24 +273,24 @@ __device__ void dsvd(float a[4][4], int m, int n, float w[4], float v[4][4])
 
 __device__ void quat2rot(const float Q[4], float R[9])
 {
-  /*  QUAT2ROT */
-  /*    R = QUAT2ROT(Q) converts a quaternion (4x1 or 1x4) into a rotation mattrix */
-  R[0] = ((Q[0] * Q[0] + Q[1] * Q[1]) - Q[2] * Q[2]) - Q[3] * Q[3];
+  R[0] = 1.0 - 2.0 * (Q[2] * Q[2] + Q[3] * Q[3]);
   R[1] = 2.0 * (Q[1] * Q[2] - Q[0] * Q[3]);
   R[2] = 2.0 * (Q[1] * Q[3] + Q[0] * Q[2]);
+
   R[3] = 2.0 * (Q[1] * Q[2] + Q[0] * Q[3]);
-  R[4] = ((Q[0] * Q[0] - Q[1] * Q[1]) + Q[2] * Q[2]) - Q[3] * Q[3];
+  R[4] = 1.0 - 2.0 * (Q[1] * Q[1] + Q[3] * Q[3]);
   R[5] = 2.0 * (Q[2] * Q[3] - Q[0] * Q[1]);
+
   R[6] = 2.0 * (Q[1] * Q[3] - Q[0] * Q[2]);
   R[7] = 2.0 * (Q[2] * Q[3] + Q[0] * Q[1]);
-  R[8] = ((Q[0] * Q[0] - Q[1] * Q[1]) - Q[2] * Q[2]) + Q[3] * Q[3];
+  R[8] = 1.0 - 2.0 * (Q[1] * Q[1] + Q[2] *Q[2]);
 
   return;
 }
 
-__device__ void crossTimesMatrix(const float V[9], int V_length,float V_times[3][3][3])
+__device__ void crossTimesMatrix(const float V[9], int V_length, float V_times[3][3][3])
 {
-  //V a 3xN matrix, rpresenting a series of 3x1 vectors
+  // V a 3xN matrix, representing a series of 3x1 vectors
   for (int i = 0; i < V_length; i++) {
     V_times[0][0][i] = 0;
     V_times[0][1][i] = -V[2 + 3 * i];
@@ -318,11 +318,11 @@ __device__ void transpose4by4(float a[4][4], float b[4][4]) {
 }
 
 __device__ void multi4by4 (float a[4][4],float b[4][4],float c[4][4]) {
-  for (int i = 0; i <4 ; i++) {
-    for (int j= 0 ; j<4 ; j++) {
+  for (int i = 0; i < 4; i++) {
+    for (int j= 0; j < 4; j++) {
       c[i][j]= 0;
-      for (int k= 0 ; k<4; k++) {
-        c[i][j]=c[i][j]+a[i][k]*b[k][j];
+      for (int k= 0; k < 4; k++) {
+        c[i][j] += a[i][k] * b[k][j];
       }
     }
   }
@@ -343,8 +343,9 @@ __device__ void multi4by4 (float a[4][4],float b[4][4],float c[4][4]) {
 __device__ void estimateRigidTransform3D(const float* d_coord, const int* d_randPts, 
                                          int idx, int numLoops, float* d_Rt_relative) {
 
-  // form the 3x3 point matrix
+  // We are using 3 three-dimensional points to estimate rigid transformation
   int pointCount = 3;
+  int dim = 3;
 
   // Recover ref and mov coords (both in world coordinates) with the intention
   // of transforming mov coords into ref coords
@@ -358,154 +359,165 @@ __device__ void estimateRigidTransform3D(const float* d_coord, const int* d_rand
     int pointIndex = d_randPts[i * numLoops + idx];
 
     // Get the three random points (ref coords)
-    x_in[i * 3 + 0] = d_coord[6 * pointIndex + 0];
-    x_in[i * 3 + 1] = d_coord[6 * pointIndex + 1];
-    x_in[i * 3 + 2] = d_coord[6 * pointIndex + 2];
+    x_in[i * dim + 0] = d_coord[6 * pointIndex + 0];
+    x_in[i * dim + 1] = d_coord[6 * pointIndex + 1];
+    x_in[i * dim + 2] = d_coord[6 * pointIndex + 2];
 
     // Get the three random points (mov coords)
-    y_in[i * 3 + 0] = d_coord[6 * pointIndex + 3];
-    y_in[i * 3 + 1] = d_coord[6 * pointIndex + 4];
-    y_in[i * 3 + 2] = d_coord[6 * pointIndex + 5];
+    y_in[i * dim + 0] = d_coord[6 * pointIndex + 3];
+    y_in[i * dim + 1] = d_coord[6 * pointIndex + 4];
+    y_in[i * dim + 2] = d_coord[6 * pointIndex + 5];
   }
 
   // Compute the centroid of the three random points by taking the average of
   // their coordinates
-  float x_centroid[3] = {0.0, 0.0, 0.0};
-  float y_centroid[3] = {0.0, 0.0, 0.0};
+  float x_centroid[3] = { 0.0, 0.0, 0.0 };
+  float y_centroid[3] = { 0.0, 0.0, 0.0 };
 
-  for (int i = 0;i<pointCount;i++) {
-    x_centroid[0] += x_in[i * 3 + 0];
-    x_centroid[1] += x_in[i * 3 + 1];
-    x_centroid[2] += x_in[i * 3 + 2];
+  for (int i = 0; i < pointCount; i++) {
+    x_centroid[0] += x_in[i * dim + 0];
+    x_centroid[1] += x_in[i * dim + 1];
+    x_centroid[2] += x_in[i * dim + 2];
 
-    y_centroid[0] += y_in[i * 3 + 0];
-    y_centroid[1] += y_in[i * 3 + 1];
-    y_centroid[2] += y_in[i * 3 + 2];
+    y_centroid[0] += y_in[i * dim + 0];
+    y_centroid[1] += y_in[i * dim + 1];
+    y_centroid[2] += y_in[i * dim + 2];
   }
 
-  for (int i = 0;i<3;i++) {
-    x_centroid[i] = x_centroid[i]/pointCount;
-    y_centroid[i] = y_centroid[i]/pointCount;
+  for (int i = 0; i < dim; i++) {
+    x_centroid[i] = x_centroid[i] / pointCount;
+    y_centroid[i] = y_centroid[i] / pointCount;
   }
 
   // Get point coordinates relative to centroid
-  float x[9], y[9];
+  float x[9];
+  float y[9];
   for (int i = 0; i < pointCount; i++) {
-    x[0 + i * 3] = x_in[0 + i * 3] - x_centroid[0];
-    x[1 + i * 3] = x_in[1 + i * 3] - x_centroid[1];
-    x[2 + i * 3] = x_in[2 + i * 3] - x_centroid[2];
+    x[i * dim + 0] = x_in[i * dim + 0] - x_centroid[0];
+    x[i * dim + 1] = x_in[i * dim + 1] - x_centroid[1];
+    x[i * dim + 2] = x_in[i * dim + 2] - x_centroid[2];
 
-    y[0 + i * 3] = y_in[0 + i * 3] - y_centroid[0];
-    y[1 + i * 3] = y_in[1 + i * 3] - y_centroid[1];
-    y[2 + i * 3] = y_in[2 + i * 3] - y_centroid[2];
+    y[i * dim + 0] = y_in[i * dim + 0] - y_centroid[0];
+    y[i * dim + 1] = y_in[i * dim + 1] - y_centroid[1];
+    y[i * dim + 2] = y_in[i * dim + 2] - y_centroid[2];
   }
 
+  // R12 = y_centrized' - x_centrized';
   float R12[9];
   for (int i = 0; i < pointCount; i++) {
-      R12[0 + i * 3] = y[0 + i * 3] - x[0 + i * 3];
-      R12[1 + i * 3] = y[1 + i * 3] - x[1 + i * 3];
-      R12[2 + i * 3] = y[2 + i * 3] - x[2 + i * 3];
+    R12[i * dim + 0] = y[i * dim + 0] - x[i * dim + 0];
+    R12[i * dim + 1] = y[i * dim + 1] - x[i * dim + 1];
+    R12[i * dim + 2] = y[i * dim + 2] - x[i * dim + 2];
   }
 
+  // R21 = x_centrized - y_centrized;
   float R21[9];
   for (int i = 0; i < pointCount; i++) {
-      R21[0 + i * 3] = - y[0 + i * 3] + x[0 + i * 3];
-      R21[1 + i * 3] = - y[1 + i * 3] + x[1 + i * 3];
-      R21[2 + i * 3] = - y[2 + i * 3] + x[2 + i * 3];
+    R21[i * dim + 0] = - y[i * dim + 0] + x[i * dim + 0];
+    R21[i * dim + 1] = - y[i * dim + 1] + x[i * dim + 1];
+    R21[i * dim + 2] = - y[i * dim + 2] + x[i * dim + 2];
   }
 
+  // R22_1 = y_centrized  + x_centrized;
   float R22_1[9];
   for (int i = 0; i < pointCount; i++) {
-      R22_1[0 + i * 3] = y[0 + i * 3] + x[0 + i * 3];
-      R22_1[1 + i * 3] = y[1 + i * 3] + x[1 + i * 3];
-      R22_1[2 + i * 3] = y[2 + i * 3] + x[2 + i * 3];
+    R22_1[i * dim + 0] = y[i * dim + 0] + x[i * dim + 0];
+    R22_1[i * dim + 1] = y[i * dim + 1] + x[i * dim + 1];
+    R22_1[i * dim + 2] = y[i * dim + 2] + x[i * dim + 2];
   }
 
+  // R22 = crossTimesMatrix(R22_1(1:3,:));
   float R22[3][3][3];
   crossTimesMatrix(R22_1, pointCount, R22);
   float B[4][4];
-  for (int i = 0;i<4;i++) {
-     for (int j = 0;j<4;j++) {
-        B[i][j] = 0;
-     }
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      B[i][j] = 0;
+    }
   }
 
   float A[4][4];
 
   for (int i = 0; i < pointCount; i++) {
     A[0][0] = 0;
-    A[0][1] = R12[0 + i * 3];
-    A[0][2] = R12[1 + i * 3];
-    A[0][3] = R12[2 + i * 3];
+    A[0][1] = R12[i * dim + 0];
+    A[0][2] = R12[i * dim + 1];
+    A[0][3] = R12[i * dim + 2];
 
-    A[1][0] = R21[0 + i * 3];
+    A[1][0] = R21[i * dim + 0];
     A[1][1] = R22[0][0][i];
     A[1][2] = R22[0][1][i];
     A[1][3] = R22[0][2][i];
 
-    A[2][0] = R21[1 + i * 3];
+    A[2][0] = R21[i * dim + 1];
     A[2][1] = R22[1][0][i];
     A[2][2] = R22[1][1][i];
     A[2][3] = R22[1][2][i];
 
-    A[3][0] = R21[2 + i * 3];
+    A[3][0] = R21[i * dim + 2];
     A[3][1] = R22[2][0][i];
     A[3][2] = R22[2][1][i];
     A[3][3] = R22[2][2][i];
 
     float A_p[4][4];
-    transpose4by4(A,A_p);
+    transpose4by4(A, A_p);
     float AA_p[4][4];
-    multi4by4(A,A_p,AA_p);
 
-    for (int j = 0;j<4;j++) {
-      for (int k = 0;k<4;k++) {
-        B[j][k] = B[j][k]+AA_p[j][k];
+    // TODO: Matlab code shows multi4by4(A_p, A, AA_p)
+    multi4by4(A, A_p, AA_p);
+
+    for (int j = 0; j < 4; j++) {
+      for (int k = 0; k < 4; k++) {
+        B[j][k] += AA_p[j][k];
       } 
     }
   }
 
-  float S[4] = {0, 0, 0, 0};
-  float V[4][4] = {0, 0, 0, 0, 0, 0, 0, 0, 
-                 0, 0, 0, 0, 0, 0, 0, 0};
+  float S[4] = { 0, 0, 0, 0 };
+  float V[4][4] = { 0, 0, 0, 0,
+                    0, 0, 0, 0,
+                    0, 0, 0, 0,
+                    0, 0, 0, 0 };
 
-  dsvd(B,4,4,S,V);
+  // TODO: SVD computation may be different
+  dsvd(B, 4, 4, S, V);
 
+  // TODO: Getting quaternion is different
   int ind = 0;
   float minsingularvalue = S[0];
-  for (int i= 0;i<4;i++) {
-    if (S[i]<minsingularvalue) {
+  for (int i = 1; i < 4; i++) {
+    if (S[i] < minsingularvalue) {
       minsingularvalue = S[i];
-      ind =i;
+      ind = i;
     }
   }
 
   float quat[4];
-  for (int i = 0;i<4;i++) {
+  for (int i = 0; i < 4; i++) {
     quat[i] = V[i][ind];
   }
 
   float rot[9];
-  quat2rot(quat,rot);
+  quat2rot(quat, rot);
   
-  float T1[4][4] = {1,0,0,-y_centroid[0],
-                   0,1,0,-y_centroid[1],
-                   0,0,1,-y_centroid[2],
-                   0,0,0,1};
-  float T2[4][4] = {rot[0],rot[1],rot[2],0,
-                   rot[3],rot[4],rot[5],0,
-                   rot[6],rot[7],rot[8],0,
-                   0,0,0,1};
-  float T3[4][4] = {1,0,0,x_centroid[0],
-                   0,1,0,x_centroid[1],
-                   0,0,1,x_centroid[2],
-                   0,0,0,1};
+  float T1[4][4] = { 1, 0, 0, -y_centroid[0],
+                     0, 1, 0, -y_centroid[1],
+                     0, 0, 1, -y_centroid[2],
+                     0, 0, 0, 1 };
+  float T2[4][4] = { rot[0], rot[1], rot[2], 0,
+                     rot[3], rot[4], rot[5], 0,
+                     rot[6], rot[7], rot[8], 0,
+                     0, 0, 0, 1 };
+  float T3[4][4] = { 1, 0, 0, x_centroid[0],
+                     0, 1, 0, x_centroid[1],
+                     0, 0, 1, x_centroid[2],
+                     0, 0, 0, 1 };
 
   float T21[4][4];
-  multi4by4(T2,T1,T21);
+  multi4by4(T2, T1, T21);
 
   float T[4][4];
-  multi4by4(T3,T21,T);
+  multi4by4(T3, T21, T);
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 4; j++) {
@@ -703,7 +715,7 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
   safeCall(cudaThreadSynchronize());
 
   // Copy results back to host
-  safeCall(cudaMemcpy(h_randPts, d_randPts, sizeof(int)*numLoops, cudaMemcpyDeviceToHost));
+  safeCall(cudaMemcpy(h_randPts, d_randPts, sizeof(int) * numLoops, cudaMemcpyDeviceToHost));
   
   int maxIndex = -1, maxCount = -1;
   for (int i= 0; i < numLoops; i++) {

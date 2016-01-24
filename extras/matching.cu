@@ -232,7 +232,8 @@ vector<SiftMatch *> MatchSiftData(SiftData &data1,
                                   SiftData &data2,
                                   MatchSiftDistance distance,
                                   float scoreThreshold,
-                                  float ambiguityThreshold) {
+                                  float ambiguityThreshold,
+                                  MatchType type) {
   TimerGPU timer(0);
   vector<SiftMatch *> matches;
   int numPts1 = data1.numPts;
@@ -336,7 +337,13 @@ vector<SiftMatch *> MatchSiftData(SiftData &data1,
       match->pt2 = &(data2.h_data[match->pt1->match]);
       match->score = match->pt1->score;
       match->ambiguity = match->pt1->ambiguity;
-      matches.push_back(match);
+
+      // If we are matching in 3D, make sure we have data available
+      if (type == MatchType2D || (match->pt1->coords3D[2] != 0 && match->pt2->coords3D[2] != 0)) {
+        matches.push_back(match);
+      } else {
+        delete match;
+      }
     }
   }
 

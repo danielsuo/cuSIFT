@@ -22,6 +22,7 @@ cv::Mat PrintMatchData(SiftData &siftData1, SiftData &siftData2, cv::Mat limg, c
 void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw);
 
 void ReadVLFeatSiftData(SiftData &siftData, const char *filename);
+vector<float *> ReadVLFeatSiftDataAsFloatArray(const char *filename);
 void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *filename);
 vector<SiftMatch *> ReadMATLABMatchData(const char *filename);
 void ReadMATLABRt(double *Rt_relative, const char *filename);

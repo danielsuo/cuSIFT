@@ -12,6 +12,11 @@ typedef enum {
   MatchSiftDistanceL2
 } MatchSiftDistance;
 
+typedef enum {
+  MatchType2D,
+  MatchType3D
+} MatchType;
+
 typedef struct {
   // Pointers to SiftPoint data
   SiftPoint *pt1;
@@ -28,6 +33,7 @@ vector<SiftMatch *> MatchSiftData(SiftData &data1,
                                   SiftData &data2,
                                   MatchSiftDistance distance = MatchSiftDistanceL2,
                                   float scoreThreshold = 0.3,
-                                  float ambiguityThreshold = 0.36);
+                                  float ambiguityThreshold = 0.36,
+                                  MatchType type = MatchType2D);
 
 #endif
