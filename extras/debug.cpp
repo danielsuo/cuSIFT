@@ -262,6 +262,43 @@ vector<SiftMatch *> ReadMATLABMatchData(const char *filename) {
   return(matches);
 }
 
+// Read MATLAB before RANSAC
+vector<SiftMatch *> ReadMATLABMatchDataBeforeRANSAC(const char *filename) {
+  fprintf(stderr, "Reading MATLAB match data before ransac from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+
+  uint32_t numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+
+  int matchPointsID_i[numPts];
+  fread((void *)matchPointsID_i, sizeof(uint32_t), numPts, fp);
+
+  int matchPointsID_j[numPts];
+  fread((void *)matchPointsID_j, sizeof(uint32_t), numPts, fp);
+
+  float SIFTdes_i[numPts * 128];
+  fread((void *)SIFTdes_i, sizeof(float), numPts * 128, fp);
+
+  float SIFTdes_j[numPts * 128];
+  fread((void *)SIFTdes_j, sizeof(float), numPts * 128, fp);
+
+  vector<SiftMatch *> matches;
+
+  for (int i = 0; i < numPts; i++) {
+    SiftMatch *match = new SiftMatch();
+    SiftPoint *pt1 = new SiftPoint();
+    SiftPoint *pt2 = new SiftPoint();
+
+    memcpy(pt1->data, SIFTdes_i + i * 128, sizeof(float) * 128);
+    memcpy(pt2->data, SIFTdes_j + i * 128, sizeof(float) * 128);
+
+    matches.push_back(match);
+  }
+
+  return matches;
+}
+
 vector<int> ReadMATLABIndices(const char *filename) {
   fprintf(stderr, "Reading MATLAB indices data from %s\n", filename);
 

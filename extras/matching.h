@@ -32,8 +32,8 @@ typedef struct {
 vector<SiftMatch *> MatchSiftData(SiftData &data1,
                                   SiftData &data2,
                                   MatchSiftDistance distance = MatchSiftDistanceL2,
-                                  float scoreThreshold = 0.3,
-                                  float ambiguityThreshold = 0.36,
+                                  float scoreThreshold = 999.0,
+                                  float ambiguityThreshold = 1.0,
                                   MatchType type = MatchType2D);
 
 #endif

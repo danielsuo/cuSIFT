@@ -80,7 +80,8 @@ SET(CUDA_SEPARABLE_COMPILATION ON)
 #   DESTINATION data
 # )
 
-cuda_add_library (cuSIFT ${cuda_sources} ${sources})
+# cuda_add_library (cuSIFT ${cuda_sources} ${sources})
+cuda_add_executable (cuSIFT ${cuda_sources} ${sources})
 set_target_properties(cuSIFT PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"         
 )

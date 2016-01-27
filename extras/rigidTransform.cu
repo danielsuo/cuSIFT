@@ -711,7 +711,7 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
 
   // Run ransac to find Rt
   EstimateRigidTransformD<<<numLoops/128, 128>>>(d_coord, d_Rt_relative, d_randPts, numPts, thresh2, type);
-  checkMsg("ComputeHomographies() execution failed\n");
+  checkMsg("EstimateRigidTransformH() execution failed\n");
   safeCall(cudaThreadSynchronize());
 
   // Copy results back to host

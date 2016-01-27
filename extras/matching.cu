@@ -140,7 +140,8 @@ __global__ void FindMaxCorr(float *corrData, SiftPoint *sift1, SiftPoint *sift2,
   if (tx == 6){}
     sift1[p1].score = maxScore[ty * 16];
   if (tx == 7)
-    sift1[p1].ambiguity = maxScore2[ty * 16] / (maxScore[ty * 16] + 1e-6);
+    // sift1[p1].ambiguity = maxScore2[ty * 16] / (maxScore[ty * 16] + 1e-6);
+    sift1[p1].ambiguity = (1 - maxScore[ty * 16]) / (1 - maxScore2[ty * 16] + 1e-6);
   if (tx == 8)
     sift1[p1].match = maxIndex[ty * 16];
   if (tx == 9)
@@ -250,6 +251,7 @@ vector<SiftMatch *> MatchSiftData(SiftData &data1,
   SiftPoint *sift2 = data2.d_data;
 #endif
   
+  // Storage for match scores
   float *d_corrData; 
 
   // Width is least multiple of 16 greater than numPts2
@@ -315,18 +317,24 @@ vector<SiftMatch *> MatchSiftData(SiftData &data1,
 
   // TODO: When we refactor match data out of SiftPoint, move this to CUDA
   // kernel. For now, create SiftMatch vector
+  float thresh2 = scoreThreshold * scoreThreshold;
+  float athresh2 = ambiguityThreshold * ambiguityThreshold;
   for (int i = 0; i < data1.numPts; i++) {
-    bool foundMatch = false;
-    switch(distance) {
-      case MatchSiftDistanceDotProduct:
-      foundMatch = data1.h_data[i].score > scoreThreshold;
-      break;
-      case MatchSiftDistanceL2:
-      foundMatch = data1.h_data[i].score < scoreThreshold;
-      break;
-    }
+    // bool foundMatch = false;
+    // switch(distance) {
+    //   case MatchSiftDistanceDotProduct:
+    //   foundMatch = data1.h_data[i].score > thresh2;
+    //   break;
+    //   case MatchSiftDistanceL2:
+    //   foundMatch = data1.h_data[i].score < thresh2;
+    //   break;
+    // }
 
-    foundMatch &= data1.h_data[i].ambiguity < ambiguityThreshold;
+    // foundMatch &= data1.h_data[i].ambiguity < athresh2;
+
+    // Make sure our ambiguity is below the ambiguity threshold and our score
+    // is below the score threshold
+    bool foundMatch = data1.h_data[i].score < thresh2 && data1.h_data[i].ambiguity < athresh2;
 
     if (foundMatch) {
       SiftMatch *match = new SiftMatch();

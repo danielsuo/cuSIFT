@@ -27,6 +27,7 @@ void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *f
 vector<SiftMatch *> ReadMATLABMatchData(const char *filename);
 void ReadMATLABRt(double *Rt_relative, const char *filename);
 vector<int> ReadMATLABIndices(const char *filename);
+vector<SiftMatch *> ReadMATLABMatchDataBeforeRANSAC(const char *filename);
 
 void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts);
 
