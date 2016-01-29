@@ -299,6 +299,62 @@ vector<SiftMatch *> ReadMATLABMatchDataBeforeRANSAC(const char *filename) {
   return matches;
 }
 
+vector<SiftMatch *> ReadMATLABRANSAC(const char *filename, vector<int> &indices, float *Rt) {
+
+  fprintf(stderr, "Reading MATLAB RANSAC data produced using DEBUG_ransactfitRt.m from %s\n", filename);
+
+  FILE *fp = fopen(filename, "rb");
+
+  uint32_t numMatches;
+  fread((void *)&numMatches, sizeof(uint32_t), 1, fp);
+  vector<SiftMatch *> matches(numMatches);
+
+  uint32_t numLoops;
+  fread((void *)&numLoops, sizeof(uint32_t), 1, fp);
+
+  fprintf(stderr, "Read %d matches and %d loop indices\n", numMatches, numLoops);
+
+  float *coords3D_i = new float[numMatches * 3];
+  fread((void *)coords3D_i, sizeof(float), numMatches * 3, fp);
+
+  float *coords3D_j = new float[numMatches * 3];
+  fread((void *)coords3D_j, sizeof(float), numMatches * 3, fp);
+
+  for (int i = 0; i < numMatches; i++) {
+    SiftMatch *match = new SiftMatch();
+    SiftPoint *pt1 = new SiftPoint();
+    SiftPoint *pt2 = new SiftPoint();
+
+    memcpy(pt1->coords3D, coords3D_i + i * 3, sizeof(float) * 3);
+    memcpy(pt2->coords3D, coords3D_j + i * 3, sizeof(float) * 3);
+
+    match->pt1 = pt1;
+    match->pt2 = pt2;
+
+    matches[i] = match;
+  }
+
+  for (int i = 0; i < numLoops * 3; i++) {
+    int index;
+    fread((void *)&index, sizeof(int), 1, fp);
+    indices.push_back(index - 1);
+  }
+
+  fread((void *)Rt, sizeof(float), 12, fp);
+
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 4; j++) {
+      fprintf(stderr, "%0.4f ", Rt[i * 4 + j]);
+    }
+    fprintf(stderr, "\n");
+  }
+
+  delete [] coords3D_i;
+  delete [] coords3D_j;
+
+  return matches;
+}
+
 vector<int> ReadMATLABIndices(const char *filename) {
   fprintf(stderr, "Reading MATLAB indices data from %s\n", filename);
 

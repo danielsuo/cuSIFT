@@ -38,6 +38,8 @@ if  (UNIX)
   endif ()
 endif ()
 
+SET (CUDA_SEPARABLE_COMPILATION ON)
+
 set (cuda_sources
   cuImage.cu
   cuImage.h
@@ -52,6 +54,7 @@ set (sources
   extras/matching.cu
   extras/rigidTransform.cu
   extras/homography.cu
+  extras/math_utils.cu
   extras/debug.cpp
 )
 
@@ -112,8 +115,6 @@ if (test)
   add_test(NAME tests COMMAND tests)
 
 endif ()
-
-# SET (CUDA_SEPARABLE_COMPILATION ON)
 
 # cuda_add_executable (cuSIFT ${cuda_sources} ${sources})
 

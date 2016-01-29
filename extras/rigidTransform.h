@@ -3,8 +3,10 @@
 
 #include <vector>
 #include <opencv2/core/core.hpp>
-#include <cusolverDn.h>
+#include <curand.h>
+#include <curand_kernel.h>
 #include "extras/matching.h"
+#include "extras/math_utils.h"
 #include "cutils.h"
 
 // Not strictly necessary, but because all other extras also include, creates
@@ -17,8 +19,9 @@ typedef enum {
 } RigidTransformType;
 
 // Host function that doesn't use OpenCV Mat
-void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numInliers,
-                             int numLoops, int numPts, float thresh2, RigidTransformType type = RigidTransformType2D);
+void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numInliers, int numLoops, 
+                             int numPts, float thresh2, RigidTransformType type = RigidTransformType2D,
+                             int *h_indices = NULL, char *h_inliers = NULL);
 
 // Convenience function to take cv::Mat data and generate random indices
 void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 

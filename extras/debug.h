@@ -28,6 +28,7 @@ vector<SiftMatch *> ReadMATLABMatchData(const char *filename);
 void ReadMATLABRt(double *Rt_relative, const char *filename);
 vector<int> ReadMATLABIndices(const char *filename);
 vector<SiftMatch *> ReadMATLABMatchDataBeforeRANSAC(const char *filename);
+vector<SiftMatch *> ReadMATLABRANSAC(const char *filename, vector<int> &indices, float *Rt);
 
 void AddSiftData(SiftData &data, SiftPoint *h_data, int numPts);
 
