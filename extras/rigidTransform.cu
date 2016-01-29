@@ -27,49 +27,26 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
 
   // Loop through all the points (3 because we're doing three-point
   // correspondance) to get coordinates
-  // QQ printf("%d: (%d, %d, %d)\n", loopIndex, d_randPts[loopIndex * dim], d_randPts[loopIndex * dim + 1], d_randPts[loopIndex * dim + 2]);
   for (int i = 0; i < pointCount; i++) {
     // Get point index
-    // int pointIndex = d_randPts[loopIndex * dim + i];
     int pointIndex = indices[i];
-      // printf("%d: %0.4f, %0.4f, %0.4f\n", pointIndex + 1, x[i * dim + 0], x[i * dim + 1], x[i * dim + 2]);
 
     // Get the three random points (ref coords)
     x[i * dim + 0] = d_coord[6 * pointIndex + 0];
     x[i * dim + 1] = d_coord[6 * pointIndex + 1];
     x[i * dim + 2] = d_coord[6 * pointIndex + 2];
 
-    // if (loopIndex == 6) {
-    // }
-
     // Get the three random points (mov coords)
     y[i * dim + 0] = d_coord[6 * pointIndex + 3];
     y[i * dim + 1] = d_coord[6 * pointIndex + 4];
     y[i * dim + 2] = d_coord[6 * pointIndex + 5];
   }
-  // QQ printf("%d x1: (%0.4f, %0.4f, %0.4f)\n", loopIndex, x_in[0], x_in[1], x_in[2]);
-  // if (loopIndex == 6) printf("Point count: %d\n", pointCount);
-  // if (loopIndex == 6) {
-  //   for (int i = 0; i < pointCount; i++) {
-  //     for (int j = 0; j < dim; j++) {
-  //       printf("%0.4f ", x[i * dim + j]);
-  //     }
-  //     printf("\n");
-  //   }
-  //   printf("\n");
-  // }
 
   // Compute the centroid of the three random points by taking the average of
   // their coordinates
   float *x_centroid = new float[dim]();
   float *y_centroid = new float[dim]();
-// if (loopIndex == 6) {
-//     printf("Centroid: ");
-//     for (int j = 0; j < dim; j++) {
-//       printf("%0.4f ", x_centroid[j]);
-//     }
-//     printf("\n");
-//   }
+
   for (int i = 0; i < pointCount; i++) {
     x_centroid[0] += x[i * dim + 0];
     x_centroid[1] += x[i * dim + 1];
@@ -84,14 +61,6 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
     x_centroid[i] = x_centroid[i] / pointCount;
     y_centroid[i] = y_centroid[i] / pointCount;
   }
-  // QQ printf("%d x1: (%0.4f, %0.4f, %0.4f)\n", loopIndex, x_centroid[0], x_centroid[1], x_centroid[2]);
-  // if (loopIndex == 6) {
-  //   printf("Centroid: ");
-  //   for (int j = 0; j < dim; j++) {
-  //     printf("%0.4f ", x_centroid[j]);
-  //   }
-  //   printf("\n");
-  // }
 
   // Get point coordinates relative to centroid
   for (int i = 0; i < pointCount; i++) {
@@ -103,65 +72,21 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
     y[i * dim + 1] -= y_centroid[1];
     y[i * dim + 2] -= y_centroid[2];
   }
-  // printf("%d x1: (%0.4f, %0.4f, %0.4f)\n", loopIndex, x[0], x[1], x[2]);
-
-  // if (loopIndex == 6) {
-  //   for (int i = 0; i < pointCount; i++) {
-  //     for (int j = 0; j < dim; j++) {
-  //       printf("%0.4f ", x[i * dim + j]);
-  //     }
-  //     printf(", ");
-  //     for (int j = 0; j < dim; j++) {
-  //       printf("%0.4f ", x_centroid[j]);
-  //     }
-  //     printf("\n");
-  //   }
-  //   printf("\n");
-  // }
 
   // R12 = y_centrized - x_centrized;
-  // float *R12 = new float[pointCount * dim];
-  // for (int i = 0; i < pointCount; i++) {
-  //   R12[i * dim + 0] = y[i * dim + 0] - x[i * dim + 0];
-  //   R12[i * dim + 1] = y[i * dim + 1] - x[i * dim + 1];
-  //   R12[i * dim + 2] = y[i * dim + 2] - x[i * dim + 2];
-  // }
-  // if (loopIndex == 6) printf("%d R12: (%0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f)\n", loopIndex, R12[0], R12[1], R12[2], R12[3], R12[4], R12[5], R12[6], R12[7], R12[8]);
-
-  // // R21 = x_centrized - y_centrized;
-  // float *R21 = new float[pointCount * dim];
-  // for (int i = 0; i < pointCount; i++) {
-  //   R21[i * dim + 0] = -y[i * dim + 0] + x[i * dim + 0];
-  //   R21[i * dim + 1] = -y[i * dim + 1] + x[i * dim + 1];
-  //   R21[i * dim + 2] = -y[i * dim + 2] + x[i * dim + 2];
-  // }
-  // // if (loopIndex == 6) printf("%d R21: (%0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f)\n", loopIndex, R21[0], R21[1], R21[2], R21[3], R21[4], R21[5], R21[6], R21[7], R21[8]);
-
-  // // R22_1 = y_centrized  + x_centrized;
+  // R21 = x_centrized - y_centrized;
+  // R22_1 = y_centrized  + x_centrized;
   float *R22_1 = new float[pointCount * dim];
   for (int i = 0; i < pointCount; i++) {
     R22_1[i * dim + 0] = y[i * dim + 0] + x[i * dim + 0];
     R22_1[i * dim + 1] = y[i * dim + 1] + x[i * dim + 1];
     R22_1[i * dim + 2] = y[i * dim + 2] + x[i * dim + 2];
   }
-  // // if (loopIndex == 6) printf("%d R22_1: (%0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f)\n", loopIndex, R22_1[0], R22_1[1], R22_1[2], R22_1[3], R22_1[4], R22_1[5], R22_1[6], R22_1[7], R22_1[8]);
-
 
   // R22 = crossTimesMatrix(R22_1(1:3,:));
   float *R22 = new float[3 * pointCount * dim];
   crossTimesMatrix(R22_1, pointCount, R22);
-  // QQ printf("%d R22_1: (%0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f, %0.4f)\n", loopIndex, R22[0][0][0], R22[0][0][1], R22[0][0][2], R22[0][1][0], R22[0][1][1], R22[0][1][2], R22[0][2][0], R22[0][2][1], R22[0][2][2]);
-  // if (loopIndex == 6) {
-  //   for (int i = 0; i < pointCount; i++) {
-  //     for (int j = 0; j < 3; j++) {
-  //       for (int k = 0; k < dim; k++) {
-  //         printf("%0.4f ", R22[i * 9 + j * 3 + k]);
-  //       }
-  //       printf("\n");
-  //     }
-  //     printf("\n");
-  //   }
-  // }
+
   float B[4][4];
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -193,15 +118,12 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
     A[3][1] = R22[pointIndex + 6];
     A[3][2] = R22[pointIndex + 7];
     A[3][3] = R22[pointIndex + 8];
-    // if (loopIndex == 6) printf("%d A_%d: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, i + 1, A[0][0], A[0][1], A[0][2], A[0][3], A[1][0], A[1][1], A[1][2], A[1][3], A[2][0], A[2][1], A[2][2], A[2][3], A[3][0], A[3][1], A[3][2], A[3][3]);
 
     float A_p[4][4];
     transpose4by4(A, A_p);
     float AA_p[4][4];
 
-    // TODO: Matlab code shows multi4by4(A_p, A, AA_p)
     multi4by4(A, A_p, AA_p);
-    // QQ printf("%d AA_p_%d: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, i, AA_p[0][0], AA_p[0][1], AA_p[0][2], AA_p[0][3], AA_p[1][0], AA_p[1][1], AA_p[1][2], AA_p[1][3], AA_p[2][0], AA_p[2][1], AA_p[2][2], AA_p[2][3], AA_p[3][0], AA_p[3][1], AA_p[3][2], AA_p[3][3]);
 
     for (int j = 0; j < 4; j++) {
       for (int k = 0; k < 4; k++) {
@@ -209,10 +131,7 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
       } 
     }
   }
-  // if (loopIndex == 6) printf("%d B: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, B[0][0], B[0][1], B[0][2], B[0][3], B[1][0], B[1][1], B[1][2], B[1][3], B[2][0], B[2][1], B[2][2], B[2][3], B[3][0], B[3][1], B[3][2], B[3][3]);
 
-  // free(R12);
-  // free(R21);
   delete [] R22_1;
   delete [] R22;
   delete [] x;
@@ -230,10 +149,7 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
   // Col 3: Negative Col 4 from Matlab
   // Col 4: Negative Col 3 from Matlab
   dsvd(B, 4, 4, S, V);
-  // if (loopIndex == 6) printf("%d V: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, V[0][0], V[0][1], V[0][2], V[0][3], V[1][0], V[1][1], V[1][2], V[1][3], V[2][0], V[2][1], V[2][2], V[2][3], V[3][0], V[3][1], V[3][2], V[3][3]);
-  // if (loopIndex == 6) printf("%d S: %0.4f %0.4f %0.4f %0.4f\n", loopIndex, S[0], S[1], S[2], S[3]);
 
-  // TODO: Getting quaternion is different
   int ind = 0;
   float minsingularvalue = S[0];
   for (int i = 1; i < 4; i++) {
@@ -248,8 +164,6 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
     quat[i] = V[i][ind];
   }
 
-  // if (loopIndex == 6) printf("%d quat: %0.4f %0.4f %0.4f %0.4f\n", loopIndex, quat[0], quat[1], quat[2], quat[3]);
-
   float rot[9];
   quat2rot(quat, rot);
   
@@ -257,23 +171,17 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
                      0, 1, 0, -y_centroid[1],
                      0, 0, 1, -y_centroid[2],
                      0, 0, 0, 1 };
-  // printf("%d T1: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, T1[0][0], T1[0][1], T1[0][2], T1[0][3], T1[1][0], T1[1][1], T1[1][2], T1[1][3], T1[2][0], T1[2][1], T1[2][2], T1[2][3], T1[3][0], T1[3][1], T1[3][2], T1[3][3]);
 
   float T2[4][4] = { rot[0], rot[1], rot[2], 0,
                      rot[3], rot[4], rot[5], 0,
                      rot[6], rot[7], rot[8], 0,
                      0, 0, 0, 1 };
-  // printf("%d T2: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, T2[0][0], T2[0][1], T2[0][2], T2[0][3], T2[1][0], T2[1][1], T2[1][2], T2[1][3], T2[2][0], T2[2][1], T2[2][2], T2[2][3], T2[3][0], T2[3][1], T2[3][2], T2[3][3]);
 
   float T3[4][4] = { 1, 0, 0, x_centroid[0],
                      0, 1, 0, x_centroid[1],
                      0, 0, 1, x_centroid[2],
                      0, 0, 0, 1 };
-  // printf("%d T3: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, T3[0][0], T3[0][1], T3[0][2], T3[0][3], T3[1][0], T3[1][1], T3[1][2], T3[1][3], T3[2][0], T3[2][1], T3[2][2], T3[2][3], T3[3][0], T3[3][1], T3[3][2], T3[3][3]);
 
-
-  // free(x_centroid);
-  // free(y_centroid);
   delete [] x_centroid;
   delete [] y_centroid;
 
@@ -282,7 +190,7 @@ __host__ __device__ void estimateRigidTransform3D(const float* d_coord, int loop
 
   float T[4][4];
   multi4by4(T3, T21, T);
-  // printf("%d T: %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n     %0.4f %0.4f %0.4f %0.4f\n", loopIndex, T[0][0], T[0][1], T[0][2], T[0][3], T[1][0], T[1][1], T[1][2], T[1][3], T[2][0], T[2][1], T[2][2], T[2][3], T[3][0], T[3][1], T[3][2], T[3][3]);
+  
   #if defined(__CUDA_ARCH__)
    for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 4; j++) {
@@ -412,12 +320,6 @@ __device__ void testRigidTransform(float *d_coord, float *d_Rt_relative, int loo
       numInliers++;
       d_inliers[loopIndex * numPts + i] = 1;
     } 
-
-    // else {    
-    //   if (loopIndex == 6) {
-    //     printf("%d: %0.7f (%d, %0.4f) x: (%0.7f, %0.7f, %0.7f) y: (%0.7f, %0.7f, %0.7f)\n", i + 1, err, err < thresh2, thresh2, x1, y1, z1, x2, y2, z2);
-    //   }
-    // }
   }
 
   // Technically we shouldn't overwrite; we're also writing numLoops-major
@@ -461,17 +363,8 @@ __global__ void EstimateRigidTransformD(float *d_coord, float *d_Rt_relative, in
 
     case RigidTransformType3D:
     int *indices = d_indices + loopIndex * 3;
-    // float *x = new float[9];
-    // float *y = new float[9];
-    // float *R22_1 = new float[9];
-    // float *R22 = new float[27];
 
     estimateRigidTransform3D(d_coord, loopIndex, 3, indices, d_Rt_relative);
-
-    // delete [] x;
-    // delete [] y;
-    // delete [] R22_1;
-    // delete [] R22;
 
     break;
   }
