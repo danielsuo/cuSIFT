@@ -3,10 +3,6 @@
 
 #include <cstdio>
 
-#define max(x,y) ((x)>(y)?(x):(y))
-#define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
-
-#define max(x,y) ((x)>(y)?(x):(y))
 #define SIGN(a, b) ((b) >= 0.0 ? fabs(a) : -fabs(a))
 
 __host__ __device__ double PYTHAG(double a, double b);

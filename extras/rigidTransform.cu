@@ -471,6 +471,7 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
   switch(type) {
     case RigidTransformType2D:
     // estimateRigidTransform2D(d_coord, d_randPts, loopIndex, d_Rt_relative);
+    safeCall(cudaMemcpy(Rt_relative, &d_Rt_relative[12 * maxIndex], 12 * sizeof(float), cudaMemcpyDeviceToHost));
     break;
 
     case RigidTransformType3D:
