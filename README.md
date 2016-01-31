@@ -1,12 +1,12 @@
 ### README
-This library is a CUDA implementation for various [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform) (Scale Invariant Feature Transform) operations and a few helper functions such as computing homographies and estimating rigid transforms using RANSAC. We borrow heavily from Mårten Björkman's CudaSift library, which can be found [here](https://github.com/Celebrandil/CudaSift). We have reproduced the original README below.
+This library is a CUDA implementation for various [SIFT](https://en.wikipedia.org/wiki/Scale-invariant_feature_transform) (Scale Invariant Feature Transform) operations and a few helper functions such as computing homographies and estimating rigid transforms using RANSAC. We borrow from MÃ¥rten BjÃ¶rkman's CudaSift library.
 
 Extra functionality lives, unsurprisingly, in the ```extras``` directory.
 
 ### Usage
 This package depends on CMake for compilation and OpenCV for image containers. See ```main.cpp``` for example usage.
 
-### Changelog (a.k.a what is new from the original repository)
+### Changelog
 - 2015-01-14 v0.2.0: Feature updates
   - Add ExtractRootSift function based on [this](https://www.robots.ox.ac.uk/~vgg/publications/2012/Arandjelovic12/arandjelovic12.pdf) paper
   - Add L2 distance option in SIFT matching
@@ -14,28 +14,3 @@ This package depends on CMake for compilation and OpenCV for image containers. S
 - 2015-12-13 v0.1.0: Initial release
   - Add estimating rigid transforms via RANSAC
   - Refactor code not related to SIFT computation into extras (e.g., sift matching, finding homographies, finding rigid transforms)
-
-### Original README
-This is the fourth version of a SIFT (Scale Invariant Feature Transform) implementation using CUDA for GPUs from NVidia. The first version is from 2007 and GPUs have evolved since then. This version is slightly more precise and considerably faster than the previous versions and has been optimized for Tesla K40 using larger images.
-
-On a Tesla K40 GPU the code takes about 5.3 ms on a 1280x960 pixel image and 6.4 ms on a 1920x1080 pixel image, while the third version required respectively 11.2 ms and 14.5 ms. An additional 1.5 ms and 1.0 ms is needed for image transfers from CPU to GPU. There is also code for brute-force matching of features and homography computation that takes about 2.5 ms and 3 ms for two sets of around 1250 SIFT features each.
-
-The code relies on CMake for compilation and OpenCV for image containers. OpenCV can however be quite easily changed to something else. The code can be relatively hard to read, given the way things have been parallelized for maximum speed.
-
-The code is free to use for non-commercial applications. If you use the code for research, please refer to the following paper.
-
-M. Björkman, N. Bergström and D. Kragic, "Detecting, segmenting and tracking unknown objects using multi-label MRF inference", CVIU, 118, pp. 111-127, January 2014.
-
-
-Computational cost (in milliseconds) on different GPUs (latest benchmark marked with *):
-
-|         |                    | 1280x960 | 1920x1080 |  GFLOPS | Bandwidth | Matching |
-| ------- | ------------------ | -------: | --------: | ------: | --------: | -------: |
-| Maxwell | GeForce GTX 970    |     5.0* |     6.5*  |    3494 |     224   |    1.6   |
-| Maxwell | GeForce GTX 750 Ti |    10.6* |    14.7*  |    1306 |      86   |    3.2   |
-| Kepler  | Tesla K40          |     5.3* |     6.4*  |    4291 |     288   |    2.5   |
-| Kepler  | GeForce GTX TITAN  |     4.6* |     5.8*  |    4500 |     288   |    2.5   |
-| Kepler  | GeForce GTX 780    |     5.3  |     6.7   |    3977 |     288   |    N/A   |
-
-Matching is done between two sets of 1050 and 1202 features respectively.
- 
