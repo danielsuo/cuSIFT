@@ -3,7 +3,8 @@
 
 #include "cuImage.h"
 
-typedef struct {
+class SiftPoint {
+public:
   float coords2D[2];
   float scale;
   float sharpness;
@@ -19,9 +20,10 @@ typedef struct {
   float empty[3];
   float data[128];
   float coords3D[3];
-} SiftPoint;
+};
 
-typedef struct {
+class SiftData {
+public:
   int numPts;         // Number of available Sift points
   int maxPts;         // Number of allocated Sift points
 #ifdef MANAGEDMEM
@@ -30,7 +32,7 @@ typedef struct {
   SiftPoint *h_data;  // Host (CPU) data
   SiftPoint *d_data;  // Device (GPU) data
 #endif
-} SiftData;
+};
 
 void InitCuda(int devNum = 0);
 void ExtractSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale = 0.0f, float subsampling = 1.0f);
