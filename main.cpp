@@ -28,12 +28,16 @@ void compareMatchingWithMATLAB(int argc, char **argv);
 ///////////////////////////////////////////////////////////////////////////////
 // Main program
 ///////////////////////////////////////////////////////////////////////////////
+
+// TODO: Move most functions into test
+// TODO: refactor demo
+
 int main(int argc, char **argv) 
 { 
-  // demo(argc, argv);
+  demo(argc, argv);
   // testMatchingDotProduct(argc, argv);
   // testMatchingL2(argc, argv);
-  compareMatchingWithMATLAB(argc, argv);
+  // compareMatchingWithMATLAB(argc, argv);
 }
 
 void compareMatchingWithMATLAB(int argc, char **argv) {
