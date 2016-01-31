@@ -2,7 +2,7 @@
 #define RIGIDTRANSFORM_H
 
 #include <vector>
-#include <opencv2/core/core.hpp>
+// #include <opencv2/core/core.hpp>
 #include <curand.h>
 #include <curand_kernel.h>
 #include "extras/matching.h"
@@ -24,9 +24,9 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
                              int *h_indices = NULL, char *h_inliers = NULL);
 
 // Convenience function to take cv::Mat data and generate random indices
-void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
-                            float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh, RigidTransformType type = RigidTransformType2D);
+// void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
+//                             float* Rt_relative, int* numInliers, 
+//                             int numLoops, float thresh, RigidTransformType type = RigidTransformType2D);
 
 // // Convenience function to take vector of SiftMatch
 void EstimateRigidTransform(vector<SiftMatch *> matches, float* Rt_relative, int* numInliers, 

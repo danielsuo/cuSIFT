@@ -43,6 +43,7 @@ SET (CUDA_SEPARABLE_COMPILATION ON)
 set (cuda_sources
   cuImage.cu
   cuImage.h
+  cuSIFT.cu
   cuSIFT_H.cu
   cuSIFT_H.h
   cuSIFT_D.h

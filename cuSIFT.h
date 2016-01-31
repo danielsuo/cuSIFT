@@ -1,7 +1,9 @@
 #ifndef CUSIFT_H
 #define CUSIFT_H
 
+#include <iostream>
 #include "cuImage.h"
+#include "cutils.h"
 
 class SiftPoint {
 public:
@@ -32,6 +34,13 @@ public:
   SiftPoint *h_data;  // Host (CPU) data
   SiftPoint *d_data;  // Device (GPU) data
 #endif
+
+  // maxPts: allocate memory for up to maxPts SiftPoints
+  // host: allocate memory on host?
+  // dev: allocate memory on device?
+  // numDevices: number of devices to use
+  SiftData(int maxPts = 1024, bool host = false, bool dev = false, int numDevices = 0);
+  ~SiftData();
 };
 
 void InitCuda(int devNum = 0);

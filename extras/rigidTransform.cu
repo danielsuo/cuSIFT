@@ -528,25 +528,25 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
  * numLoops: number of iterations to run RANSAC
  * thresh: distance threshhold
 */
-void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
-                            float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh, RigidTransformType type) {
+// void EstimateRigidTransform(const cv::Mat refCoord, const cv::Mat movCoord, 
+//                             float* Rt_relative, int* numInliers, 
+//                             int numLoops, float thresh, RigidTransformType type) {
 
-  // Combine refCoord and movCoord into contiguous block of memory
-  cv::Mat coord(refCoord.size().height, refCoord.size().width + movCoord.size().width, CV_32FC1);
-  cv::Mat left(coord, cv::Rect(0, 0, refCoord.size().width, refCoord.size().height));
-  refCoord.copyTo(left);
-  cv::Mat right(coord, cv::Rect(refCoord.size().width, 0, movCoord.size().width, movCoord.size().height));
-  movCoord.copyTo(right);
-  float *h_coord = (float*)coord.data;
+//   // Combine refCoord and movCoord into contiguous block of memory
+//   cv::Mat coord(refCoord.size().height, refCoord.size().width + movCoord.size().width, CV_32FC1);
+//   cv::Mat left(coord, cv::Rect(0, 0, refCoord.size().width, refCoord.size().height));
+//   refCoord.copyTo(left);
+//   cv::Mat right(coord, cv::Rect(refCoord.size().width, 0, movCoord.size().width, movCoord.size().height));
+//   movCoord.copyTo(right);
+//   float *h_coord = (float*)coord.data;
   
-  // Number of matches
-  int numPts = refCoord.size().height;
+//   // Number of matches
+//   int numPts = refCoord.size().height;
 
-  EstimateRigidTransformH(h_coord, Rt_relative, numInliers, numLoops, numPts, thresh * thresh, type);
+//   EstimateRigidTransformH(h_coord, Rt_relative, numInliers, numLoops, numPts, thresh * thresh, type);
 
-  return;
-}
+//   return;
+// }
  
 // Convenience function to use vector of SiftMatch objects. Arguments are the same as above.
 void EstimateRigidTransform(vector<SiftMatch *> matches, float* Rt_relative, int* numInliers, 
