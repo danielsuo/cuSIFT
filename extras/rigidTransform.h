@@ -30,6 +30,7 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
 
 // // Convenience function to take vector of SiftMatch
 void EstimateRigidTransform(vector<SiftMatch *> matches, float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh, RigidTransformType type);
+                            int numLoops, float thresh, RigidTransformType type, int *h_indices = NULL, 
+                             char *h_inliers = NULL);
 
 #endif

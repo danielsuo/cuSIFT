@@ -40,6 +40,20 @@ TEST(Matching, MatchingTest) {
   cerr << "Length of mlmatches: " << mlmatches.size() << endl;
 }
 
+TEST(Matching, MatchingRatioTest) {
+  SiftData siftData1, siftData2;
+  ReadVLFeatSiftData(siftData1, "../test/data/sift/sift1");
+  ReadVLFeatSiftData(siftData2, "../test/data/sift/sift2");
+  vector<SiftMatch *> matches = MatchSiftData(siftData1, siftData2, MatchSiftDistanceL2, 1000, 0.6);
+
+  cerr << "Originally had " << min(siftData1.numPts, siftData2.numPts) << " matches, now have " << matches.size() << endl;
+  EXPECT_EQ(340, matches.size());
+}
+
+TEST(Matching, MatchingImageBoundaryTest) {
+
+}
+
 TEST(RigidTransform, RANSACWithIndices) {
   vector<int> indices;
   float Rt[12];

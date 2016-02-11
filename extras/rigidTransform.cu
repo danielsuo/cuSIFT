@@ -550,7 +550,8 @@ void EstimateRigidTransformH(const float *h_coord, float *Rt_relative, int *numI
  
 // Convenience function to use vector of SiftMatch objects. Arguments are the same as above.
 void EstimateRigidTransform(vector<SiftMatch *> matches, float* Rt_relative, int* numInliers, 
-                            int numLoops, float thresh, RigidTransformType type) {
+                            int numLoops, float thresh, RigidTransformType type, int *h_indices, 
+                             char *h_inliers) {
   // Combine data into a contiguous block of memory
   float *h_coord = new float[6 * matches.size()];
   for (int i = 0; i < matches.size(); i++) {
@@ -558,7 +559,8 @@ void EstimateRigidTransform(vector<SiftMatch *> matches, float* Rt_relative, int
     memcpy(h_coord + 6 * i + 3, matches[i]->pt2->coords3D, sizeof(float) * 3);
   }
 
-  EstimateRigidTransformH(h_coord, Rt_relative, numInliers, numLoops, matches.size(), thresh * thresh, type);
+  EstimateRigidTransformH(h_coord, Rt_relative, numInliers, numLoops, matches.size(), 
+    thresh * thresh, type, h_indices, h_inliers);
 
   delete [] h_coord;
 }
