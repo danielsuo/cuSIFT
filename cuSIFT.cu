@@ -1,29 +1,6 @@
 #include "cuSIFT.h"
 
-SiftData::SiftData(int maxPts, bool host, bool dev, int numDevices) {
-
-  // Initialize CUDA devices
-  int nDevices;
-  cudaGetDeviceCount(&nDevices);
-  if (!nDevices) {
-    std::cerr << "No CUDA devices available" << std::endl;
-    return;
-  }
-  numDevices = std::min(nDevices - 1, numDevices);
-  deviceInit(numDevices);
-
-#ifdef VERBOSE
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, numDevices);
-  printf("Device Number: %d\n", numDevices);
-  printf("  Device name: %s\n", prop.name);
-  printf("  Memory Clock Rate (MHz): %d\n", prop.memoryClockRate/1000);
-  printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
-  printf("  Peak Memory Bandwidth (GB/s): %.1f\n\n",
-    2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
-#endif
-
-  // Initialize SiftData object
+SiftData::SiftData(int maxPts, bool host, bool dev) {
   this->numPts = 0;
   this->maxPts = maxPts;
 
@@ -54,4 +31,11 @@ SiftData::~SiftData() {
 #endif
   numPts = 0;
   maxPts = 0;
+}
+
+SiftData *ExtractSift(float *image, int numOctaves, double initBlur, float thresh, 
+  float lowestScale, float subsampling) {
+  SiftData *data = new SiftData(1024, true, true);
+
+  return data;
 }

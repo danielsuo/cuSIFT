@@ -39,8 +39,11 @@ public:
   // host: allocate memory on host?
   // dev: allocate memory on device?
   // numDevices: number of devices to use
-  SiftData(int maxPts = 1024, bool host = false, bool dev = false, int numDevices = 0);
+  SiftData(int maxPts = 1024, bool host = false, bool dev = false);
   ~SiftData();
+
+  static SiftData *ExtractSift(float *image, int numOctaves = 6, double initBlur = 0.0f, 
+    float thresh = 0.1f, float lowestScale = 0.0f, float subsampling = 1.0f);
 };
 
 void InitCuda(int devNum = 0);

@@ -80,8 +80,8 @@ target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/extras)
 ################################
 # Demo
 ################################
-cuda_add_executable  (demo EXCLUDE_FROM_ALL main.cpp ${cuda_sources} ${sources})
-target_link_libraries  (demo ${CUDA_LIBRARIES} ${OpenCV_LIBS})
+cuda_add_executable (demo EXCLUDE_FROM_ALL main.cpp ${cuda_sources} ${sources})
+target_link_libraries (demo ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 
 
 ################################

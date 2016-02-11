@@ -337,20 +337,19 @@ vector<SiftMatch *> MatchSiftData(SiftData &data1,
     bool foundMatch = data1.h_data[i].score < thresh2 && data1.h_data[i].ambiguity < athresh2;
 
     if (foundMatch) {
-      SiftMatch *match = new SiftMatch();
-
-      // We should clear out the SiftPoint memory for score, ambiguity, but we
-      // don't. They should be initialized in a constructor.
-      match->pt1 = &(data1.h_data[i]);
-      match->pt2 = &(data2.h_data[match->pt1->match]);
-      match->score = match->pt1->score;
-      match->ambiguity = match->pt1->ambiguity;
-
       // If we are matching in 3D, make sure we have data available
-      if (type == MatchType2D || (match->pt1->coords3D[2] != 0 && match->pt2->coords3D[2] != 0)) {
+      if (type == MatchType2D || (data1.h_data[i].coords3D[2] != 0 && 
+        data2.h_data[data1.h_data[i].match].coords3D[2] != 0)) {
+
+        SiftMatch *match = new SiftMatch();
+
+        // We should clear out the SiftPoint memory for score, ambiguity, but we
+        // don't. They should be initialized in a constructor.
+        match->pt1 = &(data1.h_data[i]);
+        match->pt2 = &(data2.h_data[match->pt1->match]);
+        match->score = match->pt1->score;
+        match->ambiguity = match->pt1->ambiguity;
         matches.push_back(match);
-      } else {
-        delete match;
       }
     }
   }

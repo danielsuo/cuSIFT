@@ -25,6 +25,7 @@ void ReadVLFeatSiftData(SiftData &siftData, const char *filename);
 vector<float *> ReadVLFeatSiftDataAsFloatArray(const char *filename);
 void ReadMATLABMatchData(cv::Mat &curr_match, cv::Mat &next_match, const char *filename);
 vector<SiftMatch *> ReadMATLABMatchData(const char *filename);
+int ReadMATLABMatchIndices(const char *indices_filename, uint32_t *indices_i = NULL, uint32_t *indices_j = NULL);
 void ReadMATLABRt(double *Rt_relative, const char *filename);
 vector<int> ReadMATLABIndices(const char *filename);
 vector<SiftMatch *> ReadMATLABMatchDataBeforeRANSAC(const char *filename);

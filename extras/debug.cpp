@@ -164,6 +164,22 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
   free(h_data);
 }
 
+int ReadMATLABMatchIndices(const char *indices_filename, uint32_t *indices_i, uint32_t *indices_j) {
+  fprintf(stderr, "Reading match indices data from %s\n", indices_filename);
+  FILE *fp = fopen(indices_filename, "rb");
+
+  uint32_t numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+
+  if (indices_i != NULL && indices_j != NULL) {
+    fread((void *)indices_i, sizeof(uint32_t), numPts, fp);
+    fread((void *)indices_j, sizeof(uint32_t), numPts, fp);
+  }
+  fclose(fp);
+
+  return numPts;
+}
+
 vector<float *> ReadVLFeatSiftDataAsFloatArray(const char *filename) {
   fprintf(stderr, "Reading vlfeat sift data as double array from %s\n", filename);
 

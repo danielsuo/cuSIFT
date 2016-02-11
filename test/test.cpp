@@ -17,6 +17,28 @@
 #include "extras/homography.h"
 #include "extras/debug.h"
 
+TEST(Matching, MatchingTest) {
+  SiftData siftData1, siftData2;
+  ReadVLFeatSiftData(siftData1, "../test/data/sift/sift1");
+  ReadVLFeatSiftData(siftData2, "../test/data/sift/sift2");
+
+  int numMatches = ReadMATLABMatchIndices("../test/data/match_indices/match_indices1_2");
+  uint32_t *indices_i = new uint32_t[numMatches];
+  uint32_t *indices_j = new uint32_t[numMatches];
+  numMatches = ReadMATLABMatchIndices("../test/data/match_indices/match_indices1_2", indices_i, indices_j);
+
+  vector<SiftMatch *> matches = MatchSiftData(siftData1, siftData2, MatchSiftDistanceL2);
+
+  for (int i = 0; i < numMatches; i++) {
+    // fprintf(stderr, "Match for %d: matlab %d, cusift %d\n", indices_i[i], indices_j[i], siftData1.h_data[indices_i[i] - 1].match + 1);
+    EXPECT_EQ(indices_j[i], matches[indices_i[i] - 1]->pt1->match + 1);
+  }
+
+  vector<SiftMatch *> mlmatches = ReadMATLABMatchData("../test/data/match/match1_2");
+
+  cerr << "Length of matches: " << matches.size() << endl;
+  cerr << "Length of mlmatches: " << mlmatches.size() << endl;
+}
 
 TEST(RigidTransform, RANSACWithIndices) {
   vector<int> indices;
