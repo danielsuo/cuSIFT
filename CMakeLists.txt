@@ -15,7 +15,7 @@ include (CPack)
 option (test "Build all tests." OFF) # Makes boolean 'test' available.
 
 if  (APPLE)
-  set (OpenCV_DIR "/usr/local/Cellar/opencv3/3.0.0/share/OpenCV")
+  set (OpenCV_DIR "/usr/local/Cellar/opencv3/3.1.0_1/share/OpenCV")
 endif ()
 find_package (OpenCV REQUIRED)
 
@@ -90,28 +90,75 @@ target_link_libraries (demo ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 if (test)
   include (ExternalProject)
 
-  ExternalProject_Add (
-    GTest
-    GIT_REPOSITORY https://github.com/google/googletest
+  # ExternalProject_Add (
+  #   GTest
+  #   GIT_REPOSITORY https://github.com/google/googletest
+  #   INSTALL_COMMAND ""
+  #   UPDATE_COMMAND ""
+  #   CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+  #              -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
+  #              -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
+  #              -Dgtest_force_shared_crt=ON
+  #   LOG_DOWNLOAD ON
+  #   LOG_CONFIGURE ON
+  #   LOG_BUILD ON
+  #   )
+
+  ExternalProject_Add(vlfeat
+    GIT_REPOSITORY https://github.com/danielsuo/vlfeat
+    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/vl-prefix/src/vl"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND make
+    BUILD_COMMAND ""
     INSTALL_COMMAND ""
     UPDATE_COMMAND ""
-    CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-               -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
-               -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
-               -Dgtest_force_shared_crt=ON
-    LOG_DOWNLOAD ON
-    LOG_CONFIGURE ON
-    LOG_BUILD ON
+    BUILD_IN_SOURCE 1
     )
 
-  ExternalProject_Get_Property (GTest source_dir)
-  include_directories (${source_dir}/include)
-  add_subdirectory (${source_dir})
+  SET(VLROOT ${CMAKE_CURRENT_BINARY_DIR}/vl-prefix/src/vl)
+
+  include_directories (${VLROOT})
+  link_directories (${VLROOT}/bin/glnxa64)
+  link_directories (${VLROOT}/bin/maci64)
+
+  set(GTEST_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/gtest")
+  ExternalProject_Add(GTestExternal
+      SVN_REPOSITORY http://googletest.googlecode.com/svn/trunk
+      SVN_REVISION -r HEAD
+      TIMEOUT 10
+      PREFIX "${GTEST_PREFIX}"
+      UPDATE_COMMAND ""
+      INSTALL_COMMAND "")
+
+  set(LIBPREFIX "${CMAKE_STATIC_LIBRARY_PREFIX}")
+  set(LIBSUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set(GTEST_LOCATION "${GTEST_PREFIX}/src/GTestExternal-build")
+  set(GTEST_INCLUDES "${GTEST_PREFIX}/src/GTestExternal/include")
+  set(GTEST_LIBRARY  "${GTEST_LOCATION}/${LIBPREFIX}gtest${LIBSUFFIX}")
+  set(GTEST_MAINLIB  "${GTEST_LOCATION}/${LIBPREFIX}gtest_main${LIBSUFFIX}")
+
+  add_library(GTest IMPORTED STATIC GLOBAL)
+  set_target_properties(GTest PROPERTIES
+      IMPORTED_LOCATION                 "${GTEST_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES     "${GTEST_INCLUDES}"
+      IMPORTED_LINK_INTERFACE_LIBRARIES "${CMAKE_THREAD_LIBS_INIT}")
+
+  add_library(GTestMain IMPORTED STATIC GLOBAL)
+  set_target_properties(GTestMain PROPERTIES
+      IMPORTED_LOCATION "${GTEST_MAINLIB}"
+      IMPORTED_LINK_INTERFACE_LIBRARIES
+          "${GTEST_LIBRARY};${CMAKE_THREAD_LIBS_INIT}")
+
+  add_dependencies(GTest GTestExternal vlfeat)
+
+  # ExternalProject_Get_Property (GTest source_dir)
+  # include_directories (${source_dir}/include)
+  # add_subdirectory (${source_dir})
 
   enable_testing ()
 
   cuda_add_executable (tests EXCLUDE_FROM_ALL ${PROJECT_SOURCE_DIR}/test/test.cpp)
-  target_link_libraries (tests cuSIFT gtest gtest_main)
+  target_link_libraries (tests cuSIFT GTest GTestMain vl)
 
   add_test(NAME tests COMMAND tests)
 

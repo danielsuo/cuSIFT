@@ -17,6 +17,11 @@
 #include "extras/homography.h"
 #include "extras/debug.h"
 
+extern "C" {
+  #include <vl/generic.h>
+  #include <vl/kmeans.h>
+}
+
 TEST(Matching, MatchingTest) {
   SiftData siftData1, siftData2;
   ReadVLFeatSiftData(siftData1, "../test/data/sift/sift1");
