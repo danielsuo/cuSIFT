@@ -106,7 +106,7 @@ if (test)
 
   ExternalProject_Add(vlfeat
     GIT_REPOSITORY https://github.com/danielsuo/vlfeat
-    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/vl-prefix/src/vl"
+    SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/vlfeat"
     CONFIGURE_COMMAND ""
     BUILD_COMMAND make
     BUILD_COMMAND ""
@@ -115,7 +115,7 @@ if (test)
     BUILD_IN_SOURCE 1
     )
 
-  SET(VLROOT ${CMAKE_CURRENT_BINARY_DIR}/vl-prefix/src/vl)
+  SET(VLROOT ${CMAKE_CURRENT_BINARY_DIR}/vlfeat)
 
   include_directories (${VLROOT})
   link_directories (${VLROOT}/bin/glnxa64)
@@ -157,7 +157,11 @@ if (test)
 
   enable_testing ()
 
-  cuda_add_executable (tests EXCLUDE_FROM_ALL ${PROJECT_SOURCE_DIR}/test/test.cpp)
+  cuda_add_executable (tests EXCLUDE_FROM_ALL 
+    ${PROJECT_SOURCE_DIR}/test/test.cpp
+    ${PROJECT_SOURCE_DIR}/test/detector.cpp
+    ${PROJECT_SOURCE_DIR}/test/descriptor.cpp
+    )
   target_link_libraries (tests cuSIFT GTest GTestMain vl)
 
   add_test(NAME tests COMMAND tests)
