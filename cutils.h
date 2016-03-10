@@ -1,6 +1,7 @@
 #ifndef CUDAUTILS_H
 #define CUDAUTILS_H
 
+#include <cstdlib>
 #include <cstdio>
 #include <iostream>
 

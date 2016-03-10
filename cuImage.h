@@ -17,7 +17,9 @@ public:
 public:
   cuImage();
   ~cuImage();
-  void Allocate(int width, int height, int pitch, bool withHost, float *devMem = NULL, float *hostMem = NULL);
+
+  void Allocate(int width, int height, float *hostMem = nullptr);
+  void Allocate(int width, int height, int pitch, bool withHost, float *devMem = nullptr, float *hostMem = nullptr);
   double Download();
   double Readback();
   double InitTexture();

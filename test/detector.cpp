@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <vector>
 
+#include "cuSIFT.h"
+
 #include "gtest/gtest.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/features2d/features2d.hpp>
@@ -11,7 +13,46 @@ extern "C" {
   #include <vl/sift.h>
 }
 
-TEST(Detector, DetectorInitializeTest) {
+TEST(Detector, DetectorCUSIFTTest) {
+  cv::Mat im = cv::imread("../test/data/color1.jpg", cv::IMREAD_GRAYSCALE);
+  im.convertTo(im, CV_32FC1);
+
+  int w = im.size().width;
+  int h = im.size().height;
+
+  // // Perform some initial blurring (if needed)
+  // cv::GaussianBlur(limg, limg, cv::Size(3, 3), 0.5);
+  // cv::GaussianBlur(rimg, rimg, cv::Size(3, 3), 0.5);
+        
+  // Initial Cuda images and download images to device
+  InitCuda(0);
+  cuImage cuIm;
+  cuIm.Allocate(w, h, (float*)im.data);
+  cuIm.Download();
+
+  // Extract Sift features from images
+  SiftData siftData;
+  float initBlur = 0.0f;
+  float thresh = 0.1f;
+  int numSift = 4096;
+  InitSiftData(siftData, numSift, true, true); 
+    
+  ExtractSift(siftData, cuIm, 6, initBlur, thresh, 0.0f);
+
+  FILE *fp = fopen("../test/data/cusift1", "wb");
+  fwrite(&siftData.numPts, sizeof(uint32_t), 1, fp);
+
+  for (int i = 0; i < siftData.numPts; i++) {
+    SiftPoint pt = siftData.h_data[i];
+    fwrite(pt.coords2D, sizeof(float), 2, fp);
+    fwrite(&pt.scale, sizeof(float), 1, fp);
+    fwrite(&pt.orientation, sizeof(float), 1, fp);
+  }
+
+  fclose(fp);
+}
+
+TEST(Detector, DetectorVLFeatTest) {
   cv::Mat im = cv::imread("../test/data/color1.jpg", cv::IMREAD_GRAYSCALE);
   cv::imwrite("../test/data/gray1.jpg", im);
   im.convertTo(im, CV_32FC1);
@@ -43,8 +84,6 @@ TEST(Detector, DetectorInitializeTest) {
 
   int result = vl_sift_process_first_octave(siftFilt, (float *)im.data);
 
-  std::vector<cv::KeyPoint> cv_keyPoints;
-
   FILE *fp = fopen("../test/data/sift1", "wb");
 
   while (result != VL_ERR_EOF) {
@@ -61,11 +100,6 @@ TEST(Detector, DetectorInitializeTest) {
         float desc[128];
         vl_sift_calc_keypoint_descriptor(siftFilt, desc, keypoints + i, angles[j]);
 
-        cv::Point2f pos(keypoints[i].x, keypoints[i].y);
-        cv::KeyPoint cv_keyPoint(pos, keypoints[i].sigma, angles[j], 0, 
-          keypoints[i].o);
-        cv_keyPoints.push_back(cv_keyPoint);
-
         float angle = (float)angles[j];
         fwrite(&keypoints[i].x, sizeof(float), 1, fp);
         fwrite(&keypoints[i].y, sizeof(float), 1, fp);
@@ -78,12 +112,6 @@ TEST(Detector, DetectorInitializeTest) {
   }
 
   fclose(fp);
-
-  fprintf(stderr, "Num kp %lu\n", cv_keyPoints.size());
-
-  im.convertTo(im, CV_8UC1);
-  cv::drawKeypoints(im, cv_keyPoints, im, cv::Scalar(128, 255, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-  cv::imwrite("test.jpg", im);
 
   vl_sift_delete(siftFilt);
   im.release();

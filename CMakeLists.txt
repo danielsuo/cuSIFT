@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.2)
 
 project (cuSIFT)
 set (cuSIFT_VERSION_MAJOR 2)
@@ -26,18 +26,20 @@ endif (NOT CUDA_FOUND)
 
 if  (WIN32)
   set (EXTRA_CXX_FLAGS "/D_CRT_SECURE_NO_WARNINGS ")
-  list (APPEND CUDA_NVCC_FLAGS "-arch=sm_35;--compiler-options;") 
+  list (APPEND CUDA_NVCC_FLAGS "-arch=sm_35;") 
 endif ()
 if  (UNIX)
   if  (APPLE)
     set (EXTRA_CXX_FLAGS "-msse2")
-    list (APPEND CUDA_NVCC_FLAGS "-arch=sm_35;--compiler-options;") 
+    list (APPEND CUDA_NVCC_FLAGS "-arch=sm_35;") 
   else ()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
-    list (APPEND CUDA_NVCC_FLAGS "-lineinfo;--compiler-options;") 
+    list (APPEND CUDA_NVCC_FLAGS "-lineinfo;") 
   endif ()
 endif ()
 
+list (APPEND CUDA_NVCC_FLAGS "-std=c++11;")
+# SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
 SET (CUDA_SEPARABLE_COMPILATION ON)
 
 set (cuda_sources
@@ -73,6 +75,7 @@ cuda_add_library (cuSIFT ${cuda_sources} ${sources})
 set_target_properties (cuSIFT PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"         
 )
+target_compile_options(cuSIFT PUBLIC "-std=c++11;-g")
 target_link_libraries (cuSIFT ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/extras)
@@ -81,6 +84,7 @@ target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/extras)
 # Demo
 ################################
 cuda_add_executable (demo EXCLUDE_FROM_ALL main.cpp ${cuda_sources} ${sources})
+target_compile_options(demo PUBLIC "-std=c++11;-g")
 target_link_libraries (demo ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 
 
@@ -89,20 +93,6 @@ target_link_libraries (demo ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 ################################
 if (test)
   include (ExternalProject)
-
-  # ExternalProject_Add (
-  #   GTest
-  #   GIT_REPOSITORY https://github.com/google/googletest
-  #   INSTALL_COMMAND ""
-  #   UPDATE_COMMAND ""
-  #   CMAKE_ARGS -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-  #              -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
-  #              -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
-  #              -Dgtest_force_shared_crt=ON
-  #   LOG_DOWNLOAD ON
-  #   LOG_CONFIGURE ON
-  #   LOG_BUILD ON
-  #   )
 
   ExternalProject_Add(vlfeat
     GIT_REPOSITORY https://github.com/danielsuo/vlfeat
@@ -162,6 +152,7 @@ if (test)
     ${PROJECT_SOURCE_DIR}/test/detector.cpp
     ${PROJECT_SOURCE_DIR}/test/descriptor.cpp
     )
+  # target_compile_options(tests PUBLIC "-std=c++11;-g")
   target_link_libraries (tests cuSIFT GTest GTestMain vl)
 
   add_test(NAME tests COMMAND tests)
