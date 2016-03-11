@@ -2,8 +2,10 @@
 #include <cfloat>
 #include <stdio.h>
 #include <vector>
+// #include <memory>
 
 #include "cuSIFT.h"
+#include "cuImage.h"
 
 #include "gtest/gtest.h"
 #include <opencv2/highgui/highgui.hpp>
@@ -26,27 +28,52 @@ TEST(Detector, DetectorCUSIFTTest) {
         
   // Initial Cuda images and download images to device
   InitCuda(0);
-  cuImage cuIm;
-  cuIm.Allocate(w, h, (float*)im.data);
-  cuIm.Download();
-
+  // std::unique_ptr<cuImage> cuIm(new cuImage(w, h, (float *)im.data));
+  auto cuIm = make_unique<cuImage>(w, h, (float *)im.data);
+  
   // Extract Sift features from images
-  SiftData siftData;
+  // auto sift = make_unique<cuSIFT>(4096, true, true);
+  
   float initBlur = 0.0f;
   float thresh = 0.1f;
-  int numSift = 4096;
-  InitSiftData(siftData, numSift, true, true); 
-    
-  ExtractSift(siftData, cuIm, 6, initBlur, thresh, 0.0f);
+  
+  // ExtractSift(*siftData, *cuIm, 6, initBlur, thresh, 0.0f);
+  auto siftData = new SiftData(4096, true, true);
+  siftData->Extract((float *)im.data, w, h, 6, initBlur, thresh);
+  // auto siftData = cuIm->Extract(6, initBlur, thresh, 0.0f);
 
   FILE *fp = fopen("../test/data/cusift1", "wb");
-  fwrite(&siftData.numPts, sizeof(uint32_t), 1, fp);
+  fwrite(&siftData->numPts, sizeof(uint32_t), 1, fp);
 
-  for (int i = 0; i < siftData.numPts; i++) {
-    SiftPoint pt = siftData.h_data[i];
+  for (int i = 0; i < siftData->numPts; i++) {
+    SiftPoint pt = siftData->h_data[i];
+    
     fwrite(pt.coords2D, sizeof(float), 2, fp);
     fwrite(&pt.scale, sizeof(float), 1, fp);
     fwrite(&pt.orientation, sizeof(float), 1, fp);
+  }
+
+  fclose(fp);
+
+  fp = fopen("../test/data/cusift1_check", "rb");
+  int numPts;
+  fread((void *)&numPts, sizeof(uint32_t), 1, fp);
+  fprintf(stderr, "num pts: %d\n", numPts);
+  ASSERT_EQ(numPts, siftData->numPts);
+
+  // Really hacky test
+  for (int i = 0; i < numPts; i++) {
+    float data[4];
+    fread((void *)data, sizeof(float), 4, fp);
+
+    bool found = false;
+    for (int j = 0; j < numPts; j++) {
+      SiftPoint pt = siftData->h_data[j];
+      if (pt.coords2D[0] - data[0] < 0.1 && pt.coords2D[1] - data[1] < 0.1 && pt.scale - data[2] < 0.1 && pt.orientation - data[3] < 0.1) {
+        found = true;
+      }
+    }
+    ASSERT_TRUE(found);
   }
 
   fclose(fp);

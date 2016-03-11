@@ -125,7 +125,7 @@ void PrintMatchSiftData(SiftData &siftData1, const char* filename, int imgw) {
  void ReadVLFeatSiftData(SiftData &siftData, const char *filename) {
   fprintf(stderr, "Reading vlfeat data from %s", filename);
 
-  InitSiftData(siftData, 1024, true, true);
+  // InitSiftData(siftData, 1024, true, true);
 
   FILE *fp = fopen(filename, "rb");
 

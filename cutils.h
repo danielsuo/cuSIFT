@@ -4,12 +4,27 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <memory>
 
 #ifdef WIN32
 #include <intrin.h>
 #endif
 
 #include "cuda_runtime_api.h"
+
+#if __cplusplus < 201402L
+// Utility function if we don't have c++14
+template<typename T, typename ...Args>
+std::unique_ptr<T> make_unique( Args&& ...args )
+{
+    return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
+}
+#endif
+
+inline int iDivUp(int a, int b) { return (a % b != 0) ? (a / b + 1) : (a / b); }
+inline int iDivDown(int a, int b) { return a / b; }
+inline int iAlignUp(int a, int b) { return (a % b != 0) ?  (a - a % b + b) : a; }
+inline int iAlignDown(int a, int b) { return a - a % b; }
 
 #define safeCall(err)       __safeCall(err, __FILE__, __LINE__)
 #define safeThreadSync()    __safeThreadSync(__FILE__, __LINE__)
@@ -49,16 +64,40 @@ inline bool deviceInit(int dev)
     fprintf(stderr, "CUDA error: no devices supporting CUDA.\n");
     return false;
   }
-  if (dev < 0) dev = 0;						
+  if (dev < 0) dev = 0;           
   if (dev > deviceCount-1) dev = deviceCount - 1;
   cudaDeviceProp deviceProp;
   safeCall(cudaGetDeviceProperties(&deviceProp, dev));
   if (deviceProp.major < 1) {
     fprintf(stderr, "error: device does not support CUDA.\n");
-    return false;					
+    return false;         
   }
   safeCall(cudaSetDevice(dev));
   return true;
+}
+
+// Device initialization convenience function
+inline void InitCuda(int devNum)
+{
+  int nDevices;
+  cudaGetDeviceCount(&nDevices);
+  if (!nDevices) {
+    std::cerr << "No CUDA devices available" << std::endl;
+    return;
+  }
+  devNum = std::min(nDevices - 1, devNum);
+  deviceInit(devNum);
+
+#ifdef VERBOSE
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, devNum);
+  printf("Device Number: %d\n", devNum);
+  printf("  Device name: %s\n", prop.name);
+  printf("  Memory Clock Rate (MHz): %d\n", prop.memoryClockRate/1000);
+  printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
+  printf("  Peak Memory Bandwidth (GB/s): %.1f\n\n",
+    2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
+#endif
 }
 
 class TimerGPU {

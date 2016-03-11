@@ -16,21 +16,13 @@ public:
   bool h_internalAlloc;
 public:
   cuImage();
+  cuImage(int width, int height, float *h_data);
   ~cuImage();
 
-  void Allocate(int width, int height, float *hostMem = nullptr);
-  void Allocate(int width, int height, int pitch, bool withHost, float *devMem = nullptr, float *hostMem = nullptr);
-  double Download();
-  double Readback();
-  double InitTexture();
-  double CopyToTexture(cuImage &dst, bool host);
+  void AllocateWithHostMemory(int width, int height, float *h_data);
+  void Allocate(int width, int height, int pitch, bool withHost, float *d_data = nullptr, float *h_data = nullptr);
+  double DeviceToHost();
+  double HostToDevice();
 };
-
-int iDivUp(int a, int b);
-int iDivDown(int a, int b);
-int iAlignUp(int a, int b);
-int iAlignDown(int a, int b);
-void StartTimer(unsigned int *hTimer);
-double StopTimer(unsigned int hTimer);
 
 #endif // CUIMAGE_H

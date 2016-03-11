@@ -88,8 +88,8 @@ void testMatchingL2(int argc, char **argv) {
   cuImage img1, img2;
   img1.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)limg.data);
   img2.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)rimg.data);
-  img1.Download();
-  img2.Download(); 
+  img1.HostToDevice();
+  img2.HostToDevice(); 
 
   // Extract Sift features from images
   SiftData siftData1, siftData2;
@@ -196,8 +196,8 @@ void testMatchingDotProduct(int argc, char **argv) {
   cuImage img1, img2;
   img1.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)limg.data);
   img2.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)rimg.data);
-  img1.Download();
-  img2.Download(); 
+  img1.HostToDevice();
+  img2.HostToDevice(); 
 
   // Extract Sift features from images
   SiftData siftData1, siftData2;
@@ -314,8 +314,8 @@ void demo(int argc, char **argv) {
   cuImage img1, img2;
   img1.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)limg.data);
   img2.Allocate(w, h, iAlignUp(w, 128), false, NULL, (float*)rimg.data);
-  img1.Download();
-  img2.Download(); 
+  img1.HostToDevice();
+  img2.HostToDevice(); 
 
   // Extract Sift features from images
   SiftData siftData1, siftData2;

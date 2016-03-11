@@ -97,7 +97,7 @@ __global__ void ScaleDown(float *d_Result, float *d_Data, int width, int pitch, 
   }
 }
 
-__global__ void ExtractSiftDescriptors(cudaTextureObject_t texObj, SiftPoint *d_sift, int fstPts, float subsampling) {
+__global__ void ExtractSiftDescriptors_D(cudaTextureObject_t texObj, SiftPoint *d_sift, int fstPts, float subsampling) {
   __shared__ float gauss[16];
   __shared__ float buffer[128];
   __shared__ float sums[128];
@@ -212,7 +212,7 @@ __global__ void ExtractSiftDescriptors(cudaTextureObject_t texObj, SiftPoint *d_
   }
 }
 
-__global__ void ConvertSiftToRootSift(SiftPoint *d_sift, int numPts) {
+__global__ void ConvertSiftToRootSift_D(SiftPoint *d_sift, int numPts) {
   // Get point index
   const int p = blockIdx.x * 16 + threadIdx.x;
 
@@ -232,7 +232,7 @@ __global__ void ConvertSiftToRootSift(SiftPoint *d_sift, int numPts) {
   }
 }
 
-__global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_sift, int fstPts) {
+__global__ void ComputeOrientations_D(cudaTextureObject_t texObj, SiftPoint *d_sift, int fstPts) {
   __shared__ float hist[64];
   __shared__ float gauss[11];
   const int tx = threadIdx.x;
@@ -315,7 +315,7 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_sif
 // Subtract two images (multi-scale version)
 ///////////////////////////////////////////////////////////////////////////////
 
- __global__ void FindPointsMulti(float *d_Data0, SiftPoint *d_sift, int width, int pitch, int height, int nScales, float subsampling) {
+ __global__ void FindPointsMulti_D(float *d_Data0, SiftPoint *d_sift, int width, int pitch, int height, int nScales, float subsampling) {
   #define MEMWID (MINMAX_W + 2)
   __shared__ float ymin1[MEMWID], ymin2[MEMWID], ymin3[MEMWID];
   __shared__ float ymax1[MEMWID], ymax2[MEMWID], ymax3[MEMWID];
@@ -438,7 +438,7 @@ __global__ void ComputeOrientations(cudaTextureObject_t texObj, SiftPoint *d_sif
   }
 }
 
- __global__ void LaplaceMulti(cudaTextureObject_t texObj, float *d_Result, int width, int pitch, int height) {
+ __global__ void LaplaceMulti_D(cudaTextureObject_t texObj, float *d_Result, int width, int pitch, int height) {
   __shared__ float data1[(LAPLACE_W + 2*LAPLACE_R)*LAPLACE_S];
   __shared__ float data2[LAPLACE_W*LAPLACE_S];
   const int tx = threadIdx.x;

@@ -15,28 +15,6 @@
 
 #include "cuSIFT_D.cu"
 
-void InitCuda(int devNum)
-{
-  int nDevices;
-  cudaGetDeviceCount(&nDevices);
-  if (!nDevices) {
-    std::cerr << "No CUDA devices available" << std::endl;
-    return;
-  }
-  devNum = std::min(nDevices-1, devNum);
-  deviceInit(devNum);
-
-#ifdef VERBOSE
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, devNum);
-  printf("Device Number: %d\n", devNum);
-  printf("  Device name: %s\n", prop.name);
-  printf("  Memory Clock Rate (MHz): %d\n", prop.memoryClockRate/1000);
-  printf("  Memory Bus Width (bits): %d\n", prop.memoryBusWidth);
-  printf("  Peak Memory Bandwidth (GB/s): %.1f\n\n",
-    2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6);
-#endif
-}
 
 void SynchronizeSift(SiftData &siftData)
 {
@@ -79,17 +57,17 @@ void ExtractSiftHelper(SiftData &siftData, cuImage &img, int numOctaves, double 
   safeCall(cudaFree(memoryTmp));
 }
 
-void ExtractSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
-{
-  TimerGPU timer(0);
-  ExtractSiftHelper(siftData, img, numOctaves, initBlur, thresh, lowestScale, subsampling);
-  SynchronizeSift(siftData);
-  double totTime = timer.read();
+// void ExtractSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
+// {
+//   TimerGPU timer(0);
+//   ExtractSiftHelper(siftData, img, numOctaves, initBlur, thresh, lowestScale, subsampling);
+//   SynchronizeSift(siftData);
+//   double totTime = timer.read();
 
-#ifndef VERBOSE
-  printf("Total time incl memory =      %.2f ms\n", totTime);
-#endif
-}
+// #ifndef VERBOSE
+//   printf("Total time incl memory =      %.2f ms\n", totTime);
+// #endif
+// }
 
 void ExtractRootSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
 {
@@ -195,38 +173,38 @@ void ExtractSiftOctave(SiftData &siftData, cuImage &img, double initBlur, float 
 #endif
 }
 
-void InitSiftData(SiftData &data, int num, bool host, bool dev)
-{
-  data.numPts = 0;
-  data.maxPts = num;
-  int sz = sizeof(SiftPoint)*num;
-#ifdef MANAGEDMEM
-  safeCall(cudaMallocManaged((void **)&data.m_data, sz));
-#else
-  data.h_data = NULL;
-  if (host)
-    data.h_data = (SiftPoint *)malloc(sz);
-  data.d_data = NULL;
-  if (dev)
-    safeCall(cudaMalloc((void **)&data.d_data, sz));
-#endif
-}
+// void InitSiftData(SiftData &data, int num, bool host, bool dev)
+// {
+//   data.numPts = 0;
+//   data.maxPts = num;
+//   int sz = sizeof(SiftPoint)*num;
+// #ifdef MANAGEDMEM
+//   safeCall(cudaMallocManaged((void **)&data.m_data, sz));
+// #else
+//   data.h_data = NULL;
+//   if (host)
+//     data.h_data = (SiftPoint *)malloc(sz);
+//   data.d_data = NULL;
+//   if (dev)
+//     safeCall(cudaMalloc((void **)&data.d_data, sz));
+// #endif
+// }
 
-void FreeSiftData(SiftData &data)
-{
-#ifdef MANAGEDMEM
-  safeCall(cudaFree(data.m_data));
-#else
-  if (data.d_data!=NULL)
-    safeCall(cudaFree(data.d_data));
-  data.d_data = NULL;
-  if (data.h_data!=NULL)
-    free(data.h_data);
-  data.h_data = NULL;
-#endif
-  data.numPts = 0;
-  data.maxPts = 0;
-}
+// void FreeSiftData(SiftData &data)
+// {
+// #ifdef MANAGEDMEM
+//   safeCall(cudaFree(data.m_data));
+// #else
+//   if (data.d_data!=NULL)
+//     safeCall(cudaFree(data.d_data));
+//   data.d_data = NULL;
+//   if (data.h_data!=NULL)
+//     free(data.h_data);
+//   data.h_data = NULL;
+// #endif
+//   data.numPts = 0;
+//   data.maxPts = 0;
+// }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Host side master functions
@@ -234,7 +212,7 @@ void FreeSiftData(SiftData &data)
 
 double ScaleDown(cuImage &res, cuImage &src, float variance)
 {
-  if (res.d_data==NULL || src.d_data==NULL) {
+  if (res.d_data == nullptr || src.d_data == nullptr) {
     printf("ScaleDown: missing data\n");
     return 0.0;
   }
