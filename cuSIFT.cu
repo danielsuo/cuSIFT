@@ -1,9 +1,13 @@
 // TODO: pull out / parameterize magic numbers; maybe cuSIFTOptions?
-// TODO: merge SiftData and cuImage?
+// TODO: pull out parameters into SiftData so we don't have ridiculously long function signatures
+// TODO: compare ScaleDown functions vlfeat
+// TODO: add cuImage member variable into SiftData?
+// TODO: rename SiftData to cuSIFT
+// TODO: double check peak thresh
+// TODO: iliagnup 128?
 
 #include "cuSIFT.h"
 #include "cuSIFT_D.h"
-#include "cuSIFT_H.h"
 #include "cuSIFT_D.cu"
 
 SiftData::SiftData(int maxPts, bool host, bool dev) {
@@ -54,8 +58,7 @@ void SiftData::Synchronize() {
 #endif
 }
 
-void SiftData::Extract(float *im, int width, int height, int numOctaves, double initBlur,
-  float thresh, float lowestScale, float subsampling) {
+void SiftData::Extract(float *im, int width, int height, float subsampling) {
   auto cuIm = make_unique<cuImage>(width, height, im);
   
   TimerGPU timer(0);
@@ -97,7 +100,8 @@ void SiftData::Extract(float *im, int width, int height, int numOctaves, double 
   // TODO: memorySub vs memoryTmp?
   float *memorySub = memoryTmp + sizeTmp;
 
-  ExtractSiftLoop(*cuIm, numOctaves, initBlur, thresh, lowestScale, subsampling, memoryTmp, memorySub);
+  ExtractSiftLoop(*cuIm, numOctaves, initBlur, subsampling, memoryTmp, memorySub);
+  // ExtractSiftLoop2(cuIm.get(), memoryTmp, memorySub);
 
   // Copy back number of points found
   safeCall(cudaMemcpyFromSymbol(&this->numPts, d_PointCounter, sizeof(int)));
@@ -114,7 +118,8 @@ void SiftData::Extract(float *im, int width, int height, int numOctaves, double 
 #endif
 }
 
-// void ExtractRootSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling)
+// TODO: bring rootsift back
+// void ExtractRootSift(SiftData &siftData, cuImage &img, int numOctaves, double initBlur, float subsampling)
 // {
 //   TimerGPU timer(0);
 //   ExtractSiftHelper(siftData, img, numOctaves, initBlur, thresh, lowestScale, subsampling);
@@ -127,13 +132,49 @@ void SiftData::Extract(float *im, int width, int height, int numOctaves, double 
 // #endif
 // }
 
-extern double DynamicMain(cuImage &img, SiftData &siftData, int numOctaves, double initBlur, float thresh, float lowestScale, float edgeLimit, float *memoryTmp);
+// void SiftData::ExtractSiftLoop2(cuImage *img, float *memoryTmp, float *memorySub) {
+//   TimerGPU timer(0);
+
+//   float currBlur = initBlur;
+//   float currSubsampling = initSubsampling;
+
+//   for (int octaveIndex = 0; octaveIndex < numOctaves; octaveIndex++) {
+//     fprintf(stderr, "Processing octave %d\n", octaveIndex);
+//     if (lowestScale < currSubsampling * 2.0f) {
+//       ExtractSiftOctave(*img, currBlur, peakThresh, lowestScale, currSubsampling, memoryTmp);
+//       if (octaveIndex > 0) {
+//         delete img;
+//       }
+//     }
+
+//     int w = img->width / 2;
+//     int h = img->height / 2;
+//     int p = iAlignUp(w, 128);
+
+//     // TODO: what happens if we have odd w or h?
+//     fprintf(stderr, "Making image\n");
+//     cuImage *subImg = new cuImage(w, h, memorySub, false);
+//     fprintf(stderr, "Scaling down image\n");
+//     ScaleDown(*subImg, *img, 0.5f);
+
+//     currBlur = (float)sqrt(currBlur * currBlur + 0.5f * 0.5f) / 2.0f;
+//     currSubsampling *= 2.0f;
+//     memorySub += h / 2 * p;
+
+//     img = subImg;
+//   }
+
+//   double totTime = timer.read();
+// #ifdef VERBOSE
+//   printf("ExtractSift time total =      %.2f ms\n\n", totTime);
+// #endif
+// }
 
 // TODO: subsampling? lowest scale?
-void SiftData::ExtractSiftLoop(cuImage &img, int numOctaves, double initBlur, float thresh, float lowestScale, float subsampling, float *memoryTmp, float *memorySub) 
+void SiftData::ExtractSiftLoop(cuImage &img, int numOctaves, double initBlur, float subsampling, float *memoryTmp, float *memorySub) 
 {
   TimerGPU timer(0);
-// #if 1
+
   int w = img.width;
   int h = img.height;
   if (numOctaves > 1) {
@@ -145,22 +186,20 @@ void SiftData::ExtractSiftLoop(cuImage &img, int numOctaves, double initBlur, fl
     // TODO: Why alls this magicness
     float totInitBlur = (float)sqrt(initBlur * initBlur + 0.5f * 0.5f) / 2.0f;
 
-    ExtractSiftLoop(*subImg, numOctaves - 1, totInitBlur, thresh, lowestScale, subsampling * 2.0f, memoryTmp, memorySub + (h / 2) * p);
+    ExtractSiftLoop(*subImg, numOctaves - 1, totInitBlur, subsampling * 2.0f, memoryTmp, memorySub + (h / 2) * p);
   }
 
   if (lowestScale<subsampling * 2.0f) {
-    ExtractSiftOctave(img, initBlur, thresh, lowestScale, subsampling, memoryTmp);
+    ExtractSiftOctave(img, initBlur, subsampling, memoryTmp);
   }
-// #else
-//   DynamicMain(img, siftData, numOctaves, initBlur, thresh, lowestScale, 10.0f, memoryTmp);
-// #endif
+
   double totTime = timer.read();
 #ifdef VERBOSE
   printf("ExtractSift time total =      %.2f ms\n\n", totTime);
 #endif
 }
 
-void SiftData::ExtractSiftOctave(cuImage &img, double initBlur, float thresh, float lowestScale, float subsampling, float *memoryTmp)
+void SiftData::ExtractSiftOctave(cuImage &img, double initBlur, float subsampling, float *memoryTmp)
 {
   // TODO: again, what is this?
   const int nd = NUM_SCALES + 3;
@@ -203,7 +242,7 @@ void SiftData::ExtractSiftOctave(cuImage &img, double initBlur, float thresh, fl
   double sigma = baseBlur*diffScale;
 
   // Pull out thresholds
-  FindPointsMulti(diffImg, thresh, 10.0f, sigma, 1.0f/NUM_SCALES, lowestScale/subsampling, subsampling);
+  FindPointsMulti(diffImg, sigma, 1.0f/NUM_SCALES, subsampling);
   double gpuTimeDoG = timer1.read();
   TimerGPU timer4;
   int totPts = 0;
@@ -265,24 +304,48 @@ void SiftData::ExtractSiftOctave(cuImage &img, double initBlur, float thresh, fl
 // Host side master functions
 ///////////////////////////////////////////////////////////////////////////////
 
-// TODO: convert to cuSIFT member function
+// General strategy outlined here: http://docs.nvidia.com/cuda/samples/3_Imagi
+// ng/convolutionSeparable/doc/convolutionSeparable.pdf
+// TODO: convert to cuImage member function?
+// TODO: investigate SCALEDOWN_W warps (160 x 16) -> chosen for apron size
 double ScaleDown(cuImage &res, cuImage &src, float variance) {
+  // Make sure we have allocated device data for both source and resource
   if (res.d_data == nullptr || src.d_data == nullptr) {
     printf("ScaleDown: missing data\n");
     return 0.0;
   }
+
+  // 5-pixel linear gaussian kernel
   float h_Kernel[5];
+
+  // Normalizing factor
   float kernelSum = 0.0f;
-  for (int j=0;j<5;j++) {
-    h_Kernel[j] = (float)expf(-(double)(j-2)*(j-2)/2.0/variance);      
+
+  // Compute kernel values. We only access n / 2 + 1 of the values in the CUDA
+  // kernel, but we compute all of the results so that we can normalize. We
+  // can do without computing the extra exp here as well, but maybe this was
+  // just easier?
+  for (int j = 0; j < 5; j++) {
+    h_Kernel[j] = (float)expf(-(double)(j - 2) * (j - 2) / 2.0 / variance);
     kernelSum += h_Kernel[j];
   }
-  for (int j=0;j<5;j++)
+
+  // Normalize kernel values by kernelSum
+  for (int j = 0; j < 5; j++) {
     h_Kernel[j] /= kernelSum;  
-  safeCall(cudaMemcpyToSymbol(d_Kernel1, h_Kernel, 5*sizeof(float)));
+  }
+
+  // Pass kernel to device
+  safeCall(cudaMemcpyToSymbol(d_Kernel1, h_Kernel, 5 * sizeof(float)));
+
+  // Set number of blocks and threads; chosen for apron size (i.e., because we
+  // are doing convolution, we need to access memory outside a block; to make
+  // this efficient, we want to bring in data outside the block)
   dim3 blocks(iDivUp(src.width, SCALEDOWN_W), iDivUp(src.height, SCALEDOWN_H));
   dim3 threads(SCALEDOWN_W + 4);
-  ScaleDown<<<blocks, threads>>>(res.d_data, src.d_data, src.width, src.pitch, src.height, res.pitch); 
+
+  // Start CUDA kernel
+  ScaleDown_D<<<blocks, threads>>>(res.d_data, src.d_data, src.width, src.pitch, src.height, res.pitch); 
   checkMsg("ScaleDown() execution failed\n");
   return 0.0;
 }
@@ -356,7 +419,7 @@ double SiftData::LaplaceMulti(cudaTextureObject_t texObj, cuImage *results, floa
   return 0.0; 
 }
 
-double SiftData::FindPointsMulti(cuImage *sources, float thresh, float edgeLimit, float scale, float factor, float lowestScale, float subsampling) {
+double SiftData::FindPointsMulti(cuImage *sources, float scale, float factor, float subsampling) {
   if (sources->d_data==NULL) {
     printf("FindPointsMulti: missing data\n");
     return 0.0;
@@ -364,15 +427,17 @@ double SiftData::FindPointsMulti(cuImage *sources, float thresh, float edgeLimit
   int w = sources->width;
   int p = sources->pitch;
   int h = sources->height;
-  float threshs[2] = { thresh, -thresh };
+  float threshs[2] = { peakThresh, -peakThresh };
   float scales[NUM_SCALES];  
   float diffScale = pow(2.0f, factor);
   for (int i=0;i<NUM_SCALES;i++) {
     scales[i] = scale;
     scale *= diffScale;
   }
+
+  // TODO: rename d_Threshold, d_EdgeLimit?
   safeCall(cudaMemcpyToSymbol(d_Threshold, &threshs, 2*sizeof(float)));
-  safeCall(cudaMemcpyToSymbol(d_EdgeLimit, &edgeLimit, sizeof(float)));
+  safeCall(cudaMemcpyToSymbol(d_EdgeLimit, &edgeThresh, sizeof(float)));
   safeCall(cudaMemcpyToSymbol(d_Scales, scales, sizeof(float)*NUM_SCALES));
   safeCall(cudaMemcpyToSymbol(d_Factor, &factor, sizeof(float)));
 
@@ -383,6 +448,6 @@ double SiftData::FindPointsMulti(cuImage *sources, float thresh, float edgeLimit
 #else
   FindPointsMulti_D<<<blocks, threads>>>(sources->d_data, d_data, w, p, h, NUM_SCALES, subsampling); 
 #endif
-  checkMsg("FindPointsMulti() execution failed\n");
+  checkMsg("FindPointsMulti_D() execution failed\n");
   return 0.0;
 }

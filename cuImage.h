@@ -16,7 +16,7 @@ public:
   bool h_internalAlloc;
 public:
   cuImage();
-  cuImage(int width, int height, float *h_data);
+  cuImage(int width, int height, float *h_data, bool download = true);
   ~cuImage();
 
   void AllocateWithHostMemory(int width, int height, float *h_data);

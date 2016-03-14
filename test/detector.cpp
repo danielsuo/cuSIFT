@@ -39,7 +39,14 @@ TEST(Detector, DetectorCUSIFTTest) {
   
   // ExtractSift(*siftData, *cuIm, 6, initBlur, thresh, 0.0f);
   auto siftData = new SiftData(4096, true, true);
-  siftData->Extract((float *)im.data, w, h, 6, initBlur, thresh);
+  siftData->numOctaves = 6;
+  // siftData->numScales = 3;
+  siftData->initBlur = initBlur;
+  siftData->peakThresh = thresh;
+  siftData->edgeThresh = 10.0f;
+  siftData->lowestScale = 0.0f;
+  siftData->initSubsampling = 1.0f;
+  siftData->Extract((float *)im.data, w, h);
   // auto siftData = cuIm->Extract(6, initBlur, thresh, 0.0f);
 
   FILE *fp = fopen("../test/data/cusift1", "wb");
@@ -47,7 +54,7 @@ TEST(Detector, DetectorCUSIFTTest) {
 
   for (int i = 0; i < siftData->numPts; i++) {
     SiftPoint pt = siftData->h_data[i];
-    
+
     fwrite(pt.coords2D, sizeof(float), 2, fp);
     fwrite(&pt.scale, sizeof(float), 1, fp);
     fwrite(&pt.orientation, sizeof(float), 1, fp);

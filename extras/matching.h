@@ -22,6 +22,8 @@ typedef struct {
   SiftPoint *pt1;
   SiftPoint *pt2;
 
+  // TODO: add SiftPoint indices
+
   // Match statistics
   float score;      // Distance metric (e.g., dot product or L2 distance)
   float ambiguity;  // Ratio of 2nd best and best match

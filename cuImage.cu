@@ -50,11 +50,13 @@ cuImage::cuImage() :
 
 }
 
-cuImage::cuImage(int width, int height, float *h_data) {
+cuImage::cuImage(int width, int height, float *h_data, bool download) {
   d_internalAlloc = false;
   h_internalAlloc = false;
   AllocateWithHostMemory(width, height, h_data);
-  HostToDevice();
+  if (download) {
+    HostToDevice();
+  }
 }
 
 cuImage::~cuImage()
