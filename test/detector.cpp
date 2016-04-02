@@ -29,7 +29,7 @@ TEST(Detector, DetectorCUSIFTTest) {
   // Initial Cuda images and download images to device
   InitCuda(0);
   // std::unique_ptr<cuImage> cuIm(new cuImage(w, h, (float *)im.data));
-  auto cuIm = make_unique<cuImage>(w, h, (float *)im.data);
+  cuImage *cuIm = new cuImage(w, h, (float *)im.data);
   
   // Extract Sift features from images
   // auto sift = make_unique<cuSIFT>(4096, true, true);
@@ -38,7 +38,7 @@ TEST(Detector, DetectorCUSIFTTest) {
   float thresh = 0.1f;
   
   // ExtractSift(*siftData, *cuIm, 6, initBlur, thresh, 0.0f);
-  auto siftData = new SiftData(4096, true, true);
+  SiftData *siftData = new SiftData(4096, true, true);
   siftData->numOctaves = 6;
   // siftData->numScales = 3;
   siftData->initBlur = initBlur;
@@ -82,6 +82,9 @@ TEST(Detector, DetectorCUSIFTTest) {
     }
     ASSERT_TRUE(found);
   }
+
+  delete siftData;
+  delete cuIm;
 
   fclose(fp);
 }

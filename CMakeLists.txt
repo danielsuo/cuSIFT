@@ -38,7 +38,7 @@ if  (UNIX)
   endif ()
 endif ()
 
-list (APPEND CUDA_NVCC_FLAGS "-std=c++11;")
+# list (APPEND CUDA_NVCC_FLAGS "-std=c++11;")
 # SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
 SET (CUDA_SEPARABLE_COMPILATION ON)
 
@@ -73,7 +73,8 @@ cuda_add_library (cuSIFT ${cuda_sources} ${sources})
 set_target_properties (cuSIFT PROPERTIES
   COMPILE_FLAGS "${EXTRA_CXX_FLAGS}"         
 )
-target_compile_options(cuSIFT PUBLIC "-std=c++11;-g")
+# target_compile_options(cuSIFT PUBLIC "-std=c++11;-g")
+target_compile_options(cuSIFT PUBLIC "-g")
 target_link_libraries (cuSIFT ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/extras)
@@ -82,7 +83,8 @@ target_include_directories (cuSIFT PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/extras)
 # Demo
 ################################
 cuda_add_executable (demo EXCLUDE_FROM_ALL main.cpp ${cuda_sources} ${sources})
-target_compile_options(demo PUBLIC "-std=c++11;-g")
+# target_compile_options(demo PUBLIC "-std=c++11;-g")
+target_compile_options(demo PUBLIC "-g")
 target_link_libraries (demo ${CUDA_LIBRARIES} ${OpenCV_LIBS})
 
 

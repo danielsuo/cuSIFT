@@ -20,7 +20,7 @@ public:
   ~cuImage();
 
   void AllocateWithHostMemory(int width, int height, float *h_data);
-  void Allocate(int width, int height, int pitch, bool withHost, float *d_data = nullptr, float *h_data = nullptr);
+  void Allocate(int width, int height, int pitch, bool withHost, float *d_data = NULL, float *h_data = NULL);
   double DeviceToHost();
   double HostToDevice();
 };

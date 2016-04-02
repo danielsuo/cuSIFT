@@ -19,12 +19,12 @@ SiftData::SiftData(int maxPts, bool host, bool dev) {
 #ifdef MANAGEDMEM
   safeCall(cudaMallocManaged((void **)&m_data, numBytes));
 #else
-  h_data = nullptr;
+  h_data = NULL;
   if (host) {
     h_data = (SiftPoint *)malloc(numBytes);
   }
 
-  d_data = nullptr;
+  d_data = NULL;
   if (dev) {
     safeCall(cudaMalloc((void **)&d_data, numBytes));
   }
@@ -35,15 +35,15 @@ SiftData::~SiftData() {
 #ifdef MANAGEDMEM
   safeCall(cudaFree(m_data));
 #else
-  if (d_data != nullptr) {
+  if (d_data != NULL) {
     safeCall(cudaFree(d_data));
   }
-  d_data = nullptr;
+  d_data = NULL;
 
-  if (h_data != nullptr) {
+  if (h_data != NULL) {
     free(h_data);
   }
-  h_data = nullptr;
+  h_data = NULL;
 #endif
   numPts = 0;
   maxPts = 0;
@@ -59,7 +59,7 @@ void SiftData::Synchronize() {
 }
 
 void SiftData::Extract(float *im, int width, int height, float subsampling) {
-  auto cuIm = make_unique<cuImage>(width, height, im);
+  cuImage *cuIm = new cuImage(width, height, im);
   
   TimerGPU timer(0);
 
@@ -112,6 +112,7 @@ void SiftData::Extract(float *im, int width, int height, float subsampling) {
 
   Synchronize();
   double totTime = timer.read();
+  delete cuIm;
 
 #ifndef VERBOSE
   printf("Total time incl memory =      %.2f ms\n", totTime);
@@ -178,7 +179,7 @@ void SiftData::ExtractSiftLoop(cuImage &img, int numOctaves, double initBlur, fl
   int w = img.width;
   int h = img.height;
   if (numOctaves > 1) {
-    auto subImg = make_unique<cuImage>(w / 2, h / 2, memorySub);
+    cuImage *subImg = new cuImage(w / 2, h / 2, memorySub);
     int p = iAlignUp(w / 2, 128);
     
     ScaleDown(*subImg, img, 0.5f);
@@ -187,6 +188,7 @@ void SiftData::ExtractSiftLoop(cuImage &img, int numOctaves, double initBlur, fl
     float totInitBlur = (float)sqrt(initBlur * initBlur + 0.5f * 0.5f) / 2.0f;
 
     ExtractSiftLoop(*subImg, numOctaves - 1, totInitBlur, subsampling * 2.0f, memoryTmp, memorySub + (h / 2) * p);
+    delete subImg;
   }
 
   if (lowestScale<subsampling * 2.0f) {
@@ -310,7 +312,7 @@ void SiftData::ExtractSiftOctave(cuImage &img, double initBlur, float subsamplin
 // TODO: investigate SCALEDOWN_W warps (160 x 16) -> chosen for apron size
 double ScaleDown(cuImage &res, cuImage &src, float variance) {
   // Make sure we have allocated device data for both source and resource
-  if (res.d_data == nullptr || src.d_data == nullptr) {
+  if (res.d_data == NULL || src.d_data == NULL) {
     printf("ScaleDown: missing data\n");
     return 0.0;
   }

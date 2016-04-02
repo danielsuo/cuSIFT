@@ -12,15 +12,6 @@
 
 #include "cuda_runtime_api.h"
 
-#if __cplusplus < 201402L
-// Utility function if we don't have c++14
-template<typename T, typename ...Args>
-std::unique_ptr<T> make_unique( Args&& ...args )
-{
-    return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
-}
-#endif
-
 inline int iDivUp(int a, int b) { return (a % b != 0) ? (a / b + 1) : (a / b); }
 inline int iDivDown(int a, int b) { return a / b; }
 inline int iAlignUp(int a, int b) { return (a % b != 0) ?  (a - a % b + b) : a; }
